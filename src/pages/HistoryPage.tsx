@@ -122,7 +122,7 @@ export function HistoryPage() {
             <tbody>
               {answered.map(({ question, stats }) => (
                 <tr key={question.id}>
-                  <td>
+                  <td className="question-cell">
                     <Link to={`/history/${question.id}`}>
                       【{topicLabel(question.topic)}】{question.question.split('\n')[0]?.slice(0, 24)}…
                       {question.source === 'ai' && <span className="badge badge-ai">AI</span>}

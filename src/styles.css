@@ -760,3 +760,8 @@ tbody tr:hover {
     font-size: 0.9rem;
   }
 }
+
+.history .question-cell {
+  white-space: normal;
+  min-width: 200px;
+}
