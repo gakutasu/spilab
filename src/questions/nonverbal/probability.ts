@@ -286,7 +286,7 @@ Cが当たり：残り4本中 当たり2本で 2/4
     topic: 'probability',
     subtopic: 'dice_difference',
     difficulty: 3,
-    question: '大小2個のサイコロを同時に投げるとき、出た目の差が2以上になる確率はいくらですか？',
+    question: '大小2個のサイコロを同時に投げるとき、出た目の差（大きい方の目から小さい方の目を引いた値）が2以上になる確率はいくらですか？',
     choices: ['5/9', '4/9', '25/36', '5/18'],
     correctChoice: 0,
     recommendedTime: 90,
