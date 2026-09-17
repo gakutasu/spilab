@@ -247,3 +247,16 @@ interface ExportData {
 - Export に version → マイグレーション可能
 - storage/ を差し替えればクラウド同期に移行可能
 - topics.ts に追加すれば分野追加可能
+
+## 11. AI 問題生成（追加仕様・2026-09-18）
+
+ユーザー自身の Anthropic API キーで、ブラウザから直接 Claude を呼び出して問題を生成する。バックエンドは置かない。
+
+- キーは IndexedDB の `secrets` ストアにのみ保存。export に含めない。
+- `@anthropic-ai/sdk` を `dangerouslyAllowBrowser: true` で使用。既定モデル `claude-opus-5`（`claude-sonnet-5` / `claude-haiku-4-5` を選択可）。
+- 生成: `client.beta.messages.create` + `output_config.format`（JSON Schema）。Opus 5 では `fallbacks: 'default'`（beta `server-side-fallback-2026-07-01`）を付ける。
+- プロンプトには分野説明、既存問題の例（最大 2 問）、既出問題文の冒頭一覧（重複回避）、解説形式の規約を含める。
+- 応答は `parseGeneratedPayload` で `Question` に変換し `validateQuestions` を通す。ID は `ai-<topic>-<base36 time>-<rand>`。
+- 検算（任意・既定 ON）: 別呼び出しで解説なしに問題を解かせ、`answerIndex` が `correctChoice` と一致するか確認。不一致は UI で警告。
+- 保存先は IndexedDB `generatedQuestions` ストア。実行時の問題バンクは `QuestionBankProvider` が組み込み + 生成をマージして提供する。
+- export/import は `generatedQuestions` を含む（version は 1 のまま、フィールドは任意）。
