@@ -12,7 +12,7 @@ describe('question bank', () => {
   });
 
   // Enabled once the initial question bank is complete.
-  it.skip('has at least 3 questions per topic', () => {
+  it('has at least 3 questions per topic', () => {
     for (const topic of TOPIC_IDS) {
       const count = questions.filter((q) => q.topic === topic).length;
       expect(count, topic).toBeGreaterThanOrEqual(3);
