@@ -13,7 +13,7 @@ import { useAnswers } from '../hooks/useAnswers';
 import { useSettings } from '../hooks/useSettings';
 import { useElapsed } from '../hooks/useElapsed';
 import { addAnswer } from '../storage/db';
-import { loadSession, saveSession, type ActiveSession, type SessionResult } from '../storage/sessionStore';
+import { clearSession, loadSession, saveSession, type ActiveSession, type SessionResult } from '../storage/sessionStore';
 import { ChoiceList } from '../components/ChoiceList';
 import { QuestionBody } from '../components/QuestionBody';
 import { Explanation } from '../components/Explanation';
@@ -140,8 +140,7 @@ export function SessionPage() {
           type="button"
           className="btn btn-primary"
           onClick={() => {
-            initialized.current = false;
-            saveSession({ ...session, questionIds: [], currentIndex: 0 });
+            clearSession();
             navigate('/');
           }}
         >
