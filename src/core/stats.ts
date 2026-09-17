@@ -13,6 +13,7 @@ export interface QuestionStats {
   averageAnswerTimeMs: number;
   lastAnsweredAt: string | null;
   lastResult: AnswerResult | null;
+  lastAnswerTimeMs: number | null;
   /** Trailing run of correct answers. */
   consecutiveCorrect: number;
   /** Trailing run of incorrect or unknown answers. */
@@ -109,6 +110,7 @@ export function computeQuestionStats(question: Question, records: AnswerRecord[]
     averageAnswerTimeMs: ratio(c.totalAnswerTimeMs, c.attemptCount),
     lastAnsweredAt: last ? last.timestamp : null,
     lastResult: last ? last.result : null,
+    lastAnswerTimeMs: last ? last.answerTimeMs : null,
     consecutiveCorrect: trailingRun(own, (r) => r === 'correct'),
     consecutiveMisses: trailingRun(own, (r) => r !== 'correct'),
     masteryScore,
