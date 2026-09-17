@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { getQuestion } from '../questions';
+import { useQuestionBank } from '../questions/bank';
 import { topicLabel } from '../questions/topics';
 import { computeQuestionStats, sortRecords } from '../core/stats';
 import { useAnswers } from '../hooks/useAnswers';
@@ -12,6 +12,7 @@ import { CHOICE_LABELS, formatDateTime, formatPercent, formatSeconds } from '../
 
 export function QuestionDetailPage() {
   const { questionId = '' } = useParams();
+  const { getQuestion } = useQuestionBank();
   const question = getQuestion(questionId);
   const { answers, loading } = useAnswers();
 
@@ -38,7 +39,9 @@ export function QuestionDetailPage() {
         <Link to="/history">← 学習履歴</Link>
       </p>
       <div className="session-header">
-        <span className="topic-badge">【{topicLabel(question.topic)}】</span>
+        <span className="topic-badge">
+          【{topicLabel(question.topic)}】{question.source === 'ai' && <span className="badge badge-ai">AI生成</span>}
+        </span>
         <EvalBadge evaluation={stats.evaluation} />
       </div>
       <QuestionBody question={question} />

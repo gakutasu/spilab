@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { AnswerRecord, Question } from '../types';
-import { getQuestion, questions } from '../questions';
+import { useQuestionBank } from '../questions/bank';
 import { topicLabel } from '../questions/topics';
 import { selectQuestions } from '../core/selection';
 import { randomRng } from '../core/rng';
@@ -19,7 +19,13 @@ import { QuestionBody } from '../components/QuestionBody';
 import { Explanation } from '../components/Explanation';
 import { CHOICE_LABELS, formatClock, formatSeconds, todayKey } from '../utils/format';
 
-function feedbackFor(question: Question, result: SessionResult, before: AnswerRecord[], after: AnswerRecord[]): Feedback {
+function feedbackFor(
+  questions: Question[],
+  question: Question,
+  result: SessionResult,
+  before: AnswerRecord[],
+  after: AnswerRecord[],
+): Feedback {
   const b = computeTopicStats(questions, before).get(question.topic)!;
   const a = computeTopicStats(questions, after).get(question.topic)!;
   return buildFeedback({
@@ -47,13 +53,14 @@ export function SessionPage() {
   const navigate = useNavigate();
   const { answers, loading, reload } = useAnswers();
   const { settings, loading: settingsLoading } = useSettings();
+  const { questions, getQuestion, loading: bankLoading } = useQuestionBank();
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [error, setError] = useState<string | null>(null);
   const initialized = useRef(false);
 
   useEffect(() => {
-    if (loading || settingsLoading || initialized.current) return;
+    if (loading || settingsLoading || bankLoading || initialized.current) return;
     initialized.current = true;
     const existing = loadSession();
     if (existing && isComplete(existing)) {
@@ -72,7 +79,7 @@ export function SessionPage() {
     const fresh = createSession(picked.map((q) => q.id), todayKey());
     saveSession(fresh);
     setSession(fresh);
-  }, [loading, settingsLoading, answers, settings.questionsPerDay, navigate]);
+  }, [loading, settingsLoading, bankLoading, answers, questions, settings.questionsPerDay, navigate]);
 
   const questionId = session ? currentQuestionId(session) : null;
   const question = questionId ? getQuestion(questionId) : undefined;
@@ -80,8 +87,8 @@ export function SessionPage() {
   // Rebuild feedback after a reload in the answered phase.
   useEffect(() => {
     if (!session || session.phase !== 'answered' || !question || !session.lastResult || feedback) return;
-    setFeedback(feedbackFor(question, session.lastResult, withoutLatest(answers, question.id), answers));
-  }, [session, question, answers, feedback]);
+    setFeedback(feedbackFor(questions, question, session.lastResult, withoutLatest(answers, question.id), answers));
+  }, [session, question, questions, answers, feedback]);
 
   const update = useCallback((next: ActiveSession) => {
     saveSession(next);
@@ -94,7 +101,7 @@ export function SessionPage() {
     if (!session || !question) return;
     const { session: next, record } = submitAnswer(session, question, Date.now(), new Date(), unknown);
     const after = [...answers, record];
-    setFeedback(feedbackFor(question, next.lastResult!, answers, after));
+    setFeedback(feedbackFor(questions, question, next.lastResult!, answers, after));
     update(next);
     await addAnswer(record);
     await reload();
@@ -159,7 +166,9 @@ export function SessionPage() {
         <span className="progress">
           問題 {session.currentIndex + 1} / {session.questionIds.length}
         </span>
-        <span className="topic-badge">【{topicLabel(question.topic)}】</span>
+        <span className="topic-badge">
+          【{topicLabel(question.topic)}】{question.source === 'ai' && <span className="badge badge-ai">AI</span>}
+        </span>
       </div>
 
       <QuestionBody question={question} />

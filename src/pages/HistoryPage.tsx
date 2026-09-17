@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { questions } from '../questions';
+import { useQuestionBank } from '../questions/bank';
 import { CATEGORY_LABEL, topicLabel } from '../questions/topics';
 import { computeAllQuestionStats, computeOverallStats, computeTopicStats } from '../core/stats';
 import { useAnswers } from '../hooks/useAnswers';
@@ -9,16 +9,17 @@ import { formatPercent, formatSeconds } from '../utils/format';
 
 export function HistoryPage() {
   const { answers, loading } = useAnswers();
+  const { questions } = useQuestionBank();
 
-  const overall = useMemo(() => computeOverallStats(questions, answers), [answers]);
-  const topics = useMemo(() => [...computeTopicStats(questions, answers).values()], [answers]);
+  const overall = useMemo(() => computeOverallStats(questions, answers), [questions, answers]);
+  const topics = useMemo(() => [...computeTopicStats(questions, answers).values()], [questions, answers]);
   const answered = useMemo(() => {
     const stats = computeAllQuestionStats(questions, answers);
     return questions
       .map((q) => ({ question: q, stats: stats.get(q.id)! }))
       .filter((x) => x.stats.attemptCount > 0)
       .sort((a, b) => a.stats.masteryScore - b.stats.masteryScore || b.stats.attemptCount - a.stats.attemptCount);
-  }, [answers]);
+  }, [questions, answers]);
 
   if (loading) return <div className="page muted">読み込み中…</div>;
 
@@ -124,6 +125,7 @@ export function HistoryPage() {
                   <td>
                     <Link to={`/history/${question.id}`}>
                       【{topicLabel(question.topic)}】{question.question.split('\n')[0]?.slice(0, 24)}…
+                      {question.source === 'ai' && <span className="badge badge-ai">AI</span>}
                     </Link>
                   </td>
                   <td className="num">{stats.attemptCount}</td>

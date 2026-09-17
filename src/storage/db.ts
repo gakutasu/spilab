@@ -1,8 +1,8 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import { DEFAULT_SETTINGS, type AnswerRecord, type Settings } from '../types';
+import { DEFAULT_SETTINGS, type AnswerRecord, type Question, type Settings } from '../types';
 
 const DB_NAME = 'spilab';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 interface SpilabDB extends DBSchema {
   answers: {
@@ -14,6 +14,14 @@ interface SpilabDB extends DBSchema {
     key: string;
     value: Settings;
   };
+  secrets: {
+    key: string;
+    value: string;
+  };
+  generatedQuestions: {
+    key: string;
+    value: Question;
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<SpilabDB>> | null = null;
@@ -21,11 +29,17 @@ let dbPromise: Promise<IDBPDatabase<SpilabDB>> | null = null;
 function db(): Promise<IDBPDatabase<SpilabDB>> {
   if (!dbPromise) {
     dbPromise = openDB<SpilabDB>(DB_NAME, DB_VERSION, {
-      upgrade(database) {
-        const answers = database.createObjectStore('answers', { keyPath: 'id', autoIncrement: true });
-        answers.createIndex('byQuestion', 'questionId');
-        answers.createIndex('byTimestamp', 'timestamp');
-        database.createObjectStore('settings');
+      upgrade(database, oldVersion) {
+        if (oldVersion < 1) {
+          const answers = database.createObjectStore('answers', { keyPath: 'id', autoIncrement: true });
+          answers.createIndex('byQuestion', 'questionId');
+          answers.createIndex('byTimestamp', 'timestamp');
+          database.createObjectStore('settings');
+        }
+        if (oldVersion < 2) {
+          database.createObjectStore('secrets');
+          database.createObjectStore('generatedQuestions', { keyPath: 'id' });
+        }
       },
     });
   }
@@ -77,4 +91,43 @@ export async function getSettings(): Promise<Settings> {
 
 export async function saveSettings(settings: Settings): Promise<void> {
   await (await db()).put('settings', settings, SETTINGS_KEY);
+}
+
+const API_KEY = 'anthropicApiKey';
+
+export async function getApiKey(): Promise<string> {
+  return (await (await db()).get('secrets', API_KEY)) ?? '';
+}
+
+export async function saveApiKey(key: string): Promise<void> {
+  const database = await db();
+  if (key) await database.put('secrets', key, API_KEY);
+  else await database.delete('secrets', API_KEY);
+}
+
+export async function getGeneratedQuestions(): Promise<Question[]> {
+  return (await db()).getAll('generatedQuestions');
+}
+
+/** Adds questions whose id is not already stored. Returns the number added. */
+export async function addGeneratedQuestions(questions: Question[]): Promise<number> {
+  const database = await db();
+  const tx = database.transaction('generatedQuestions', 'readwrite');
+  let added = 0;
+  for (const q of questions) {
+    const existing = await tx.store.get(q.id);
+    if (existing) continue;
+    await tx.store.add(q);
+    added += 1;
+  }
+  await tx.done;
+  return added;
+}
+
+export async function deleteGeneratedQuestion(id: string): Promise<void> {
+  await (await db()).delete('generatedQuestions', id);
+}
+
+export async function clearGeneratedQuestions(): Promise<void> {
+  await (await db()).clear('generatedQuestions');
 }

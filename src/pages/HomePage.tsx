@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { questions } from '../questions';
+import { useQuestionBank } from '../questions/bank';
 import { topicLabel } from '../questions/topics';
 import { computeOverallStats, computeTopicStats } from '../core/stats';
 import { EVALUATION_LABEL } from '../core/evaluation';
@@ -14,17 +14,18 @@ export function HomePage() {
   const navigate = useNavigate();
   const { answers, loading } = useAnswers();
   const { settings } = useSettings();
+  const { questions } = useQuestionBank();
   const session = loadSession();
   const inProgress = session && !isComplete(session);
   const finished = session && isComplete(session);
 
-  const overall = useMemo(() => computeOverallStats(questions, answers), [answers]);
+  const overall = useMemo(() => computeOverallStats(questions, answers), [questions, answers]);
   const weakTopics = useMemo(() => {
     return [...computeTopicStats(questions, answers).values()]
       .filter((t) => t.evaluation === 'weak')
       .sort((a, b) => a.score - b.score)
       .slice(0, 3);
-  }, [answers]);
+  }, [questions, answers]);
 
   const startNew = () => {
     clearSession();

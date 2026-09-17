@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { Evaluation } from '../types';
-import { getQuestion, questions } from '../questions';
+import { useQuestionBank } from '../questions/bank';
 import { topicLabel, type TopicId } from '../questions/topics';
 import { computeTopicStats } from '../core/stats';
 import { isComplete } from '../core/session';
@@ -19,6 +19,7 @@ const GROUPS: Array<{ key: Evaluation; title: string }> = [
 export function SummaryPage() {
   const navigate = useNavigate();
   const { answers, loading } = useAnswers();
+  const { questions, getQuestion } = useQuestionBank();
   const session = loadSession();
 
   const topicGroups = useMemo(() => {
@@ -35,7 +36,7 @@ export function SummaryPage() {
       groups.set(ev, [...(groups.get(ev) ?? []), topic]);
     }
     return groups;
-  }, [session, answers]);
+  }, [session, answers, questions, getQuestion]);
 
   if (!session || !isComplete(session) || session.results.length === 0) {
     return (

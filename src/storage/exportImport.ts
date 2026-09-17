@@ -1,5 +1,6 @@
-import { DEFAULT_SETTINGS, type AnswerRecord, type Settings } from '../types';
+import { DEFAULT_SETTINGS, type AnswerRecord, type Question, type Settings } from '../types';
 import { localDateKey } from '../core/stats';
+import { validateQuestions } from '../questions/validate';
 
 export const EXPORT_VERSION = 1;
 
@@ -9,10 +10,17 @@ export interface ExportData {
   exportedAt: string;
   settings: Settings;
   answers: AnswerRecord[];
+  generatedQuestions: Question[];
 }
 
-export function buildExport(settings: Settings, answers: AnswerRecord[], now: Date = new Date()): ExportData {
-  return { app: 'spilab', version: EXPORT_VERSION, exportedAt: now.toISOString(), settings, answers };
+/** The API key is intentionally never part of an export. */
+export function buildExport(
+  settings: Settings,
+  answers: AnswerRecord[],
+  generatedQuestions: Question[],
+  now: Date = new Date(),
+): ExportData {
+  return { app: 'spilab', version: EXPORT_VERSION, exportedAt: now.toISOString(), settings, answers, generatedQuestions };
 }
 
 export function exportFileName(now: Date = new Date()): string {
@@ -34,6 +42,15 @@ function isRecord(value: unknown): value is AnswerRecord {
   );
 }
 
+function parseSettings(value: unknown): Settings {
+  const s = (value && typeof value === 'object' ? value : {}) as Partial<Settings>;
+  return {
+    questionsPerDay: typeof s.questionsPerDay === 'number' ? s.questionsPerDay : DEFAULT_SETTINGS.questionsPerDay,
+    aiModel: typeof s.aiModel === 'string' ? s.aiModel : DEFAULT_SETTINGS.aiModel,
+    aiVerify: typeof s.aiVerify === 'boolean' ? s.aiVerify : DEFAULT_SETTINGS.aiVerify,
+  };
+}
+
 /** Parses exported JSON. Throws an Error with a user-facing Japanese message on invalid input. */
 export function parseImport(json: string): ExportData {
   let parsed: unknown;
@@ -51,15 +68,20 @@ export function parseImport(json: string): ExportData {
     if (!isRecord(r)) throw new Error(`answers の${i + 1}件目の形式が不正です。`);
   });
 
-  const s = (v.settings ?? {}) as Partial<Settings>;
-  const settings: Settings = {
-    questionsPerDay: typeof s.questionsPerDay === 'number' ? s.questionsPerDay : DEFAULT_SETTINGS.questionsPerDay,
-  };
+  let generatedQuestions: Question[] = [];
+  if (v.generatedQuestions !== undefined) {
+    if (!Array.isArray(v.generatedQuestions)) throw new Error('generatedQuestions が配列ではありません。');
+    generatedQuestions = v.generatedQuestions as Question[];
+    const errors = validateQuestions(generatedQuestions);
+    if (errors.length) throw new Error(`generatedQuestions が不正です：${errors[0]}`);
+  }
+
   return {
     app: 'spilab',
     version: EXPORT_VERSION,
     exportedAt: typeof v.exportedAt === 'string' ? v.exportedAt : '',
-    settings,
+    settings: parseSettings(v.settings),
     answers: v.answers as AnswerRecord[],
+    generatedQuestions,
   };
 }

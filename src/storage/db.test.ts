@@ -1,14 +1,47 @@
 import 'fake-indexeddb/auto';
-import { addAnswer, getAllAnswers, getAnswersByQuestion, clearAnswers, getSettings, saveSettings, importAnswers } from './db';
-import type { AnswerRecord } from '../types';
+import {
+  addAnswer,
+  getAllAnswers,
+  getAnswersByQuestion,
+  clearAnswers,
+  getSettings,
+  saveSettings,
+  importAnswers,
+  getApiKey,
+  saveApiKey,
+  getGeneratedQuestions,
+  addGeneratedQuestions,
+  deleteGeneratedQuestion,
+  clearGeneratedQuestions,
+} from './db';
+import { DEFAULT_SETTINGS, type AnswerRecord, type Question } from '../types';
 
 function rec(questionId: string, timestamp: string): Omit<AnswerRecord, 'id'> {
   return { questionId, timestamp, selectedChoice: 1, result: 'correct', answerTimeMs: 1234 };
 }
 
+function gq(id: string): Question {
+  return {
+    id,
+    category: 'nonverbal',
+    topic: 'probability',
+    difficulty: 2,
+    question: 'q',
+    choices: ['a', 'b', 'c', 'd'],
+    correctChoice: 1,
+    recommendedTime: 60,
+    explanation: 'x'.repeat(50),
+    tags: [],
+    source: 'ai',
+    createdAt: '2026-09-18T00:00:00.000Z',
+    generatedBy: 'claude-opus-5',
+  };
+}
+
 beforeEach(async () => {
   await clearAnswers();
-  await saveSettings({ questionsPerDay: 7 });
+  await clearGeneratedQuestions();
+  await saveSettings(DEFAULT_SETTINGS);
 });
 
 describe('answers store', () => {
@@ -47,14 +80,37 @@ describe('importAnswers', () => {
     expect(added).toBe(2);
     const all = await getAllAnswers();
     expect(all).toHaveLength(3);
-    // Imported ids are not reused; the store assigns its own.
     expect(all.every((r) => r.id !== 99 && r.id !== 100)).toBe(true);
   });
 });
 
 describe('settings store', () => {
-  it('returns defaults when nothing is saved', async () => {
-    await saveSettings({ questionsPerDay: 10 });
-    expect(await getSettings()).toEqual({ questionsPerDay: 10 });
+  it('fills defaults for missing fields', async () => {
+    await saveSettings({ questionsPerDay: 10 } as never);
+    expect(await getSettings()).toEqual({ ...DEFAULT_SETTINGS, questionsPerDay: 10 });
+  });
+});
+
+describe('api key store', () => {
+  it('stores and clears the key', async () => {
+    expect(await getApiKey()).toBe('');
+    await saveApiKey('sk-ant-test');
+    expect(await getApiKey()).toBe('sk-ant-test');
+    await saveApiKey('');
+    expect(await getApiKey()).toBe('');
+  });
+});
+
+describe('generated questions store', () => {
+  it('adds, lists, deletes and clears; duplicates by id are skipped', async () => {
+    const added = await addGeneratedQuestions([gq('ai-probability-a'), gq('ai-probability-b')]);
+    expect(added).toBe(2);
+    expect(await addGeneratedQuestions([gq('ai-probability-a'), gq('ai-probability-c')])).toBe(1);
+    const all = await getGeneratedQuestions();
+    expect(all.map((q) => q.id).sort()).toEqual(['ai-probability-a', 'ai-probability-b', 'ai-probability-c']);
+    await deleteGeneratedQuestion('ai-probability-b');
+    expect((await getGeneratedQuestions()).map((q) => q.id).sort()).toEqual(['ai-probability-a', 'ai-probability-c']);
+    await clearGeneratedQuestions();
+    expect(await getGeneratedQuestions()).toHaveLength(0);
   });
 });

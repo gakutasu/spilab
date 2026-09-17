@@ -12,6 +12,7 @@ export function Layout() {
             ホーム
           </NavLink>
           <NavLink to="/history">履歴</NavLink>
+          <NavLink to="/generate">AI作成</NavLink>
           <NavLink to="/settings">設定</NavLink>
         </nav>
       </header>

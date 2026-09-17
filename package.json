@@ -13,6 +13,7 @@
     "validate": "vitest run src/questions"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.126.0",
     "idb": "^8.0.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

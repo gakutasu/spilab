@@ -21,6 +21,12 @@ export interface Question {
   /** Simple markdown: "## " headings, blank-line separated paragraphs. */
   explanation: string;
   tags: string[];
+  /** Absent for built-in questions. */
+  source?: 'ai';
+  /** ISO timestamp for generated questions. */
+  createdAt?: string;
+  /** Model id that generated the question. */
+  generatedBy?: string;
 }
 
 export interface AnswerRecord {
@@ -36,7 +42,11 @@ export interface AnswerRecord {
 
 export interface Settings {
   questionsPerDay: number;
+  /** Claude model id used for AI question generation. */
+  aiModel: string;
+  /** Run a second, independent solve to confirm generated answers. */
+  aiVerify: boolean;
 }
 
-export const DEFAULT_SETTINGS: Settings = { questionsPerDay: 7 };
+export const DEFAULT_SETTINGS: Settings = { questionsPerDay: 7, aiModel: 'claude-opus-5', aiVerify: true };
 export const QUESTIONS_PER_DAY_OPTIONS = [5, 7, 10, 15] as const;

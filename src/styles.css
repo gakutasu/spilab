@@ -658,3 +658,105 @@ tbody tr:hover {
     margin-top: 6px;
   }
 }
+
+/* AI generation */
+.badge-ai {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
+  margin-left: 6px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.field-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.field-inline input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+}
+
+.field input[type='password'],
+.field input[type='text'] {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.drafts > * + * {
+  margin-top: var(--space);
+}
+
+.draft-card > * + * {
+  margin-top: 12px;
+}
+
+.draft-card.is-saved {
+  border-color: var(--ok);
+}
+
+.draft-card.is-discarded {
+  opacity: 0.5;
+}
+
+.draft-card details,
+.topic-details {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.draft-card summary,
+.topic-details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.actions-row {
+  flex-direction: row;
+}
+
+.actions-row .btn {
+  flex: 1;
+}
+
+.generated-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+
+.generated-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+
+.notice ul {
+  margin: 4px 0 0;
+  padding-left: 1.2em;
+}
+
+.nav a {
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .nav a {
+    padding: 8px 6px;
+    font-size: 0.9rem;
+  }
+}
