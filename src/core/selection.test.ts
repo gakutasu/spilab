@@ -129,6 +129,19 @@ describe('selectQuestions', () => {
     expect(permCount).toBeGreaterThan(profitCount * 2);
   });
 
+  it('spreads a session across topics when the bank allows it', () => {
+    const topics: TopicId[] = ['vocabulary', 'idiom', 'word_meaning', 'reading', 'ratio', 'speed', 'work_rate', 'set'];
+    const bank = topics.flatMap((t, ti) =>
+      [1, 2, 3, 4, 5].map((i) => makeQuestion(`${t}${i}`, t, ti < 4 ? 'verbal' : 'nonverbal')),
+    );
+    let distinctTotal = 0;
+    for (let seed = 0; seed < 100; seed++) {
+      const picked = selectQuestions({ questions: bank, records: [], count: 7, now: NOW, rng: mulberry32(seed) });
+      distinctTotal += new Set(picked.map((q) => q.topic)).size;
+    }
+    expect(distinctTotal / 100).toBeGreaterThan(6.3);
+  });
+
   it('is deterministic for a given seed', () => {
     const a = selectQuestions({ questions: all, records: [], count: 5, now: NOW, rng: mulberry32(42) });
     const b = selectQuestions({ questions: all, records: [], count: 5, now: NOW, rng: mulberry32(42) });

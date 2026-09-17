@@ -56,7 +56,10 @@ interface Candidate {
   bucket: Evaluation;
 }
 
-function drawFromBuckets(candidates: Candidate[], need: number, rng: Rng): Question[] {
+/** Weight multiplier for a topic that is already in the set, so a session covers varied topics. */
+const REPEATED_TOPIC_FACTOR = 0.1;
+
+function drawFromBuckets(candidates: Candidate[], need: number, rng: Rng, pickedTopics: Set<TopicId>): Question[] {
   const buckets = new Map<Evaluation, Candidate[]>();
   for (const c of candidates) {
     const list = buckets.get(c.bucket);
@@ -70,8 +73,11 @@ function drawFromBuckets(candidates: Candidate[], need: number, rng: Rng): Quest
     if (keys.length === 0) break;
     const bucketKey = keys[weightedIndex(keys.map((k) => BUCKET_WEIGHTS[k]), rng)]!;
     const list = buckets.get(bucketKey)!;
-    const idx = weightedIndex(list.map((c) => priorityWeight(c.stats, c.question)), rng);
-    picked.push(list[idx]!.question);
+    const weights = list.map((c) => priorityWeight(c.stats, c.question) * (pickedTopics.has(c.question.topic) ? REPEATED_TOPIC_FACTOR : 1));
+    const idx = weightedIndex(weights, rng);
+    const question = list[idx]!.question;
+    picked.push(question);
+    pickedTopics.add(question.topic);
     list.splice(idx, 1);
   }
   return picked;
@@ -85,6 +91,7 @@ function selectForCategory(
   topicEval: Map<TopicId, Evaluation>,
   now: Date,
   rng: Rng,
+  pickedTopics: Set<TopicId>,
 ): Question[] {
   const pool: Candidate[] = questions
     .filter((q) => q.category === category)
@@ -94,7 +101,7 @@ function selectForCategory(
     });
   const fresh = pool.filter((c) => !isInCooldown(c.stats, now));
   const candidates = fresh.length >= need ? fresh : pool;
-  return drawFromBuckets(candidates, need, rng);
+  return drawFromBuckets(candidates, need, rng, pickedTopics);
 }
 
 /** Reorders so that adjacent questions rarely share a topic. Single pass, best effort. */
@@ -133,9 +140,10 @@ export function selectQuestions({ questions, records, count, now, rng }: Selecti
     nonverbalNeed += Math.min(leftover - extraVerbal, available.nonverbal - nonverbalNeed);
   }
 
+  const pickedTopics = new Set<TopicId>();
   const picked = [
-    ...selectForCategory('verbal', verbalNeed, questions, qStats, topicEval, now, rng),
-    ...selectForCategory('nonverbal', nonverbalNeed, questions, qStats, topicEval, now, rng),
+    ...selectForCategory('verbal', verbalNeed, questions, qStats, topicEval, now, rng, pickedTopics),
+    ...selectForCategory('nonverbal', nonverbalNeed, questions, qStats, topicEval, now, rng, pickedTopics),
   ];
   return spreadTopics(shuffle(picked, rng));
 }
