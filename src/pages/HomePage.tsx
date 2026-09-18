@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { questions } from '../questions';
 import { computeOverallStats, computeTopicStats } from '../core/stats';
@@ -9,11 +9,13 @@ import { clearSession, loadSession } from '../storage/sessionStore';
 import { ActivityHeatmap } from '../components/ActivityHeatmap';
 import { topicLabel } from '../questions/topics';
 import { formatPercent } from '../utils/format';
+import { HERO_MESSAGES } from '../data/messages';
 
 export function HomePage() {
   const navigate = useNavigate();
   const { answers, loading } = useAnswers();
   const { settings } = useSettings();
+  const [message] = useState(() => HERO_MESSAGES[Math.floor(Math.random() * HERO_MESSAGES.length)]!);
   const session = loadSession();
   const inProgress = session && !isComplete(session);
   const finished = session && isComplete(session);
@@ -33,8 +35,8 @@ export function HomePage() {
     <div className="page home">
       <section className="hero">
         <p className="hero-kicker">転職向け SPI 対策</p>
-        <h1>今日も、苦手をひとつ潰す。</h1>
-        <p className="lead">1問ずつ解いて、間違えた分野・わからなかった分野から優先的に出題。</p>
+        <h1 className="hero-message">{message.text}</h1>
+        {message.by ? <p className="hero-by">— {message.by}</p> : <p className="lead">1問ずつ解いて、苦手な分野から優先的に出題。</p>}
         {inProgress ? (
           <>
             <button type="button" className="btn btn-primary btn-lg btn-hero" onClick={() => navigate('/session')}>
