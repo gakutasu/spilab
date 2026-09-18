@@ -25,7 +25,8 @@ https://<GitHubユーザー名>.github.io/<リポジトリ名>/
 - **学習履歴画面**：全体・分野別・問題別の統計
 - **JSON エクスポート／インポート**：別の端末やブラウザへ学習履歴と AI 生成問題を移行
 - **AI 問題生成（任意）**：自分の Anthropic API キーを設定すると、ブラウザから直接 Claude に新しい問題を作らせて問題バンクに追加できる
-- **完全ローカル**：バックエンドなし、解析ツールなし。学習履歴はブラウザ内にのみ保存
+- **クラウド同期（任意）**：Supabase を設定すると Google / GitHub ログインで複数端末の履歴を同期
+- **ローカル優先**：未ログインならバックエンド不要。解析ツールなし
 
 ## 収録問題
 
@@ -60,12 +61,35 @@ https://<GitHubユーザー名>.github.io/<リポジトリ名>/
 - 保存した問題は通常の出題・履歴・得意不得意判定の対象になります（問題 ID は `ai-<分野>-…`）。削除は AI作成画面または設定画面から行えます。
 - API 利用料金はキーの持ち主に課金されます。1 回の生成でモデルに応じた費用が発生します。
 
+## クラウド同期（任意機能・Supabase）
+
+未設定のままでも動きます（履歴はブラウザ内のみ）。複数端末で同期したい場合だけ設定します。
+
+### 仕組み
+
+- ログインは Supabase Auth（Google / GitHub の OAuth）。パスワードは扱いません
+- 回答は追記のみのレコードなので、ローカル（IndexedDB）とクラウドを「重複を除いた和集合」でマージします。競合は起きません
+- 同期対象：回答履歴・AI生成問題・設定。**Anthropic API キーは同期しません**
+- テーブルは Row Level Security で保護され、本人の行しか読み書きできません
+
+### 設定手順
+
+1. [Supabase](https://supabase.com/) でプロジェクトを作成（無料枠で可）
+2. **SQL Editor** で [supabase/schema.sql](supabase/schema.sql) を実行
+3. **Authentication → Providers** で Google と GitHub（どちらか一方でも可）を有効化
+   - 各プロバイダの OAuth アプリを作成し、コールバック URL に Supabase が表示する `https://<project>.supabase.co/auth/v1/callback` を登録
+4. **Authentication → URL Configuration** の **Redirect URLs** に公開 URL（例：`https://<user>.github.io/spilab/`）と開発用 `http://localhost:5173/spilab/` を追加
+5. **Project Settings → API** の Project URL と anon key を環境変数に設定
+   - ローカル：`.env.local` に `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY`（[.env.example](.env.example) 参照）
+   - GitHub Pages：リポジトリの **Settings → Secrets and variables → Actions → Variables** に `SUPABASE_URL` と `SUPABASE_ANON_KEY` を登録（anon key は公開前提の鍵です）
+6. デプロイ後、アプリの **設定 → クラウド同期** からログイン
+
 ## 開発環境
 
 - Node.js 22 以上（開発時は 24 で確認）
 - npm
 - React 19 / TypeScript 5 / Vite 8 / Vitest 5
-- react-router-dom（HashRouter）/ idb（IndexedDB）/ @anthropic-ai/sdk（AI 問題生成）
+- react-router-dom（HashRouter）/ idb（IndexedDB）/ @anthropic-ai/sdk（AI 問題生成）/ @supabase/supabase-js（クラウド同期）
 
 ## 起動方法
 

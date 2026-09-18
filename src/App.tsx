@@ -1,6 +1,7 @@
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { QuestionBankProvider } from './questions/bank';
+import { SyncProvider } from './hooks/useSync';
 import { HomePage } from './pages/HomePage';
 import { SessionPage } from './pages/SessionPage';
 import { SummaryPage } from './pages/SummaryPage';
@@ -12,7 +13,8 @@ import { GeneratePage } from './pages/GeneratePage';
 export function App() {
   return (
     <QuestionBankProvider>
-      <HashRouter>
+      <SyncProvider>
+        <HashRouter>
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
@@ -24,7 +26,8 @@ export function App() {
           <Route path="/generate" element={<GeneratePage />} />
         </Route>
       </Routes>
-      </HashRouter>
+        </HashRouter>
+      </SyncProvider>
     </QuestionBankProvider>
   );
 }

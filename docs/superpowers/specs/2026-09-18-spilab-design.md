@@ -260,3 +260,14 @@ interface ExportData {
 - 検算（任意・既定 ON）: 別呼び出しで解説なしに問題を解かせ、`answerIndex` が `correctChoice` と一致するか確認。不一致は UI で警告。
 - 保存先は IndexedDB `generatedQuestions` ストア。実行時の問題バンクは `QuestionBankProvider` が組み込み + 生成をマージして提供する。
 - export/import は `generatedQuestions` を含む（version は 1 のまま、フィールドは任意）。
+
+## 12. クラウド同期（追加仕様・2026-09-19）
+
+Supabase（Auth + Postgres + RLS）で複数端末の同期を提供する。未設定ビルドでは機能自体を表示しない。
+
+- 認証: `signInWithOAuth`（google / github、PKCE）。redirect 先は `origin + BASE_URL`。HashRouter と共存させるため `?code=` を使う PKCE を採用し、セッション確立後に URL から `code` を除去
+- テーブル: `answers`（unique: user_id, question_id, answered_at）、`generated_questions`（pk: user_id, id）、`settings`（pk: user_id）。すべて RLS で `auth.uid() = user_id`
+- 同期（`storage/sync.ts` の `syncAll`）: ①`created_at > lastSyncAt` の回答を pull → `importAnswers` で重複除外、②生成問題を pull → `addGeneratedQuestions`、③初回同期のみ remote settings を適用、④ローカル全回答・生成問題・設定を upsert（`ignoreDuplicates`）、⑤watermark を localStorage に保存
+- 即時 push: 回答保存・生成問題保存/削除・設定変更のたびに `SyncProvider` の after-hook が push。失敗は画面上のエラー表示のみで、次回 `syncAll` が補完
+- 「学習履歴をすべて削除」はログイン中ならクラウド側も削除（確認文に明記）
+- API キーはローカルの `secrets` ストアのみ。同期・export とも対象外

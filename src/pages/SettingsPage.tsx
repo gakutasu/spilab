@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { QUESTIONS_PER_DAY_OPTIONS } from '../types';
 import { useSettings } from '../hooks/useSettings';
 import { useQuestionBank } from '../questions/bank';
+import { useSync } from '../hooks/useSync';
+import { formatDateTime } from '../utils/format';
 import { MODEL_OPTIONS } from '../ai/models';
 import {
   addGeneratedQuestions,
@@ -20,6 +22,7 @@ type Notice = { kind: 'ok' | 'ng'; text: string } | null;
 export function SettingsPage() {
   const { settings, update } = useSettings();
   const bank = useQuestionBank();
+  const sync = useSync();
   const [notice, setNotice] = useState<Notice>(null);
   const [aiNotice, setAiNotice] = useState<Notice>(null);
   const [apiKey, setApiKey] = useState('');
@@ -58,6 +61,7 @@ export function SettingsPage() {
       const addedQuestions = await addGeneratedQuestions(data.generatedQuestions);
       await update(data.settings);
       await bank.reload();
+      if (sync.user) void sync.syncNow();
       setNotice({
         kind: 'ok',
         text: `回答${added}件（重複${data.answers.length - added}件はスキップ）、AI生成問題${addedQuestions}件を追加しました。`,
@@ -70,15 +74,18 @@ export function SettingsPage() {
   };
 
   const resetAnswers = async () => {
-    if (!window.confirm('学習履歴をすべて削除します。この操作は取り消せません。よろしいですか？')) return;
+    const scope = sync.user ? 'このブラウザとクラウドの学習履歴' : '学習履歴';
+    if (!window.confirm(`${scope}をすべて削除します。この操作は取り消せません。よろしいですか？`)) return;
     await clearAnswers();
     clearSession();
+    await sync.afterAnswersCleared();
     setNotice({ kind: 'ok', text: '学習履歴を削除しました。' });
   };
 
   const resetGenerated = async () => {
     if (!window.confirm(`AI生成問題${bank.generated.length}件をすべて削除します。これらの問題の回答履歴は集計から外れます。よろしいですか？`)) return;
     await clearGeneratedQuestions();
+    sync.afterGeneratedDeleted('all');
     clearSession();
     await bank.reload();
     setNotice({ kind: 'ok', text: 'AI生成問題を削除しました。' });
@@ -102,6 +109,42 @@ export function SettingsPage() {
         </label>
         <p className="muted small">次に「今日のSPIを始める」を押したときから反映されます。</p>
       </section>
+
+      {sync.configured && (
+        <section className="card">
+          <h2>クラウド同期</h2>
+          {sync.user ? (
+            <>
+              <p>
+                ログイン中：{sync.user.email ?? sync.user.id}
+                {sync.lastSyncAt && <span className="muted small">（最終同期 {formatDateTime(sync.lastSyncAt)}）</span>}
+              </p>
+              <p className="muted small">回答・AI生成問題・設定は自動で同期されます。APIキーは同期しません。</p>
+              <div className="actions actions-row">
+                <button type="button" className="btn btn-secondary" onClick={() => void sync.syncNow()} disabled={sync.syncing}>
+                  {sync.syncing ? '同期中…' : '今すぐ同期'}
+                </button>
+                <button type="button" className="btn btn-link" onClick={() => void sync.signOut()}>
+                  ログアウト
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="muted small">ログインすると、学習履歴を複数の端末・ブラウザで共有できます。ログインしなくても、このブラウザ内で学習できます。</p>
+              <div className="actions actions-row">
+                <button type="button" className="btn btn-secondary" onClick={() => void sync.signIn('google')}>
+                  Googleでログイン
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={() => void sync.signIn('github')}>
+                  GitHubでログイン
+                </button>
+              </div>
+            </>
+          )}
+          {sync.error && <p className="notice ng">{sync.error}</p>}
+        </section>
+      )}
 
       <section className="card">
         <h2>AI問題生成（Anthropic API）</h2>

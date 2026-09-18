@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AnswerRecord } from '../types';
 import { getAllAnswers } from '../storage/db';
+import { useSync } from './useSync';
 
 export function useAnswers() {
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const { version } = useSync();
 
   const reload = useCallback(async () => {
     const all = await getAllAnswers();
@@ -14,7 +16,7 @@ export function useAnswers() {
 
   useEffect(() => {
     void reload();
-  }, [reload]);
+  }, [reload, version]);
 
   return { answers, loading, reload, setAnswers };
 }

@@ -5,6 +5,7 @@ import { TOPIC_IDS, TOPICS, CATEGORY_LABEL, topicLabel, type TopicId } from '../
 import { useQuestionBank } from '../questions/bank';
 import { useSettings } from '../hooks/useSettings';
 import { useAnswers } from '../hooks/useAnswers';
+import { useSync } from '../hooks/useSync';
 import { computeTopicStats } from '../core/stats';
 import { EVALUATION_LABEL } from '../core/evaluation';
 import { createClient, describeApiError, generateQuestions, verifyQuestion, type GeneratedDraft } from '../ai/generate';
@@ -27,6 +28,7 @@ export function GeneratePage() {
   const bank = useQuestionBank();
   const { settings } = useSettings();
   const { answers } = useAnswers();
+  const { afterGeneratedSaved, afterGeneratedDeleted } = useSync();
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [topic, setTopic] = useState<TopicId | 'auto'>('auto');
   const [count, setCount] = useState<number>(3);
@@ -94,6 +96,7 @@ export function GeneratePage() {
     const item = drafts[index];
     if (!item) return;
     await addGeneratedQuestions([item.question]);
+    afterGeneratedSaved([item.question]);
     await bank.reload();
     setDrafts((prev) => prev.map((d, i) => (i === index ? { ...d, status: 'saved' } : d)));
   };
@@ -106,6 +109,7 @@ export function GeneratePage() {
     const targets = drafts.filter((d) => d.status === 'pending' && d.verification?.agrees);
     if (targets.length === 0) return;
     await addGeneratedQuestions(targets.map((d) => d.question));
+    afterGeneratedSaved(targets.map((d) => d.question));
     await bank.reload();
     const ids = new Set(targets.map((d) => d.question.id));
     setDrafts((prev) => prev.map((d) => (ids.has(d.question.id) ? { ...d, status: 'saved' } : d)));
@@ -114,6 +118,7 @@ export function GeneratePage() {
   const removeSaved = async (q: Question) => {
     if (!window.confirm('このAI生成問題を削除しますか？')) return;
     await deleteGeneratedQuestion(q.id);
+    afterGeneratedDeleted([q.id]);
     await bank.reload();
   };
 

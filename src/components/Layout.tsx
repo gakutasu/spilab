@@ -1,6 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { useSync } from '../hooks/useSync';
 
 export function Layout() {
+  const { user } = useSync();
   return (
     <div className="app">
       <header className="app-header">
@@ -19,7 +21,11 @@ export function Layout() {
       <main className="app-main">
         <Outlet />
       </main>
-      <footer className="app-footer">学習履歴はこのブラウザに保存されます。サーバーには送信されません。</footer>
+      <footer className="app-footer">
+        {user
+          ? `学習履歴はこのブラウザに保存され、${user.email ?? 'ログイン中のアカウント'}のクラウド領域にも同期されます。`
+          : '学習履歴はこのブラウザに保存されます。サーバーには送信されません。'}
+      </footer>
     </div>
   );
 }

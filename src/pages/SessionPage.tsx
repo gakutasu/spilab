@@ -12,6 +12,7 @@ import { createSession, currentQuestionId, isComplete, nextQuestion, selectChoic
 import { useAnswers } from '../hooks/useAnswers';
 import { useSettings } from '../hooks/useSettings';
 import { useElapsed } from '../hooks/useElapsed';
+import { useSync } from '../hooks/useSync';
 import { addAnswer } from '../storage/db';
 import { clearSession, loadSession, saveSession, type ActiveSession, type SessionResult } from '../storage/sessionStore';
 import { ChoiceList } from '../components/ChoiceList';
@@ -54,6 +55,7 @@ export function SessionPage() {
   const { answers, loading, reload } = useAnswers();
   const { settings, loading: settingsLoading } = useSettings();
   const { questions, getQuestion, loading: bankLoading } = useQuestionBank();
+  const { afterAnswer } = useSync();
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -104,6 +106,7 @@ export function SessionPage() {
     setFeedback(feedbackFor(questions, question, next.lastResult!, answers, after));
     update(next);
     await addAnswer(record);
+    afterAnswer(record);
     await reload();
   };
 
