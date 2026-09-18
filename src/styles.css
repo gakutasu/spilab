@@ -1145,3 +1145,15 @@ tbody tr:hover {
     --cell: 14px;
   }
 }
+
+.hero-message {
+  font-size: 1.45rem;
+  line-height: 1.45;
+  text-wrap: balance;
+}
+
+.hero-by {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
