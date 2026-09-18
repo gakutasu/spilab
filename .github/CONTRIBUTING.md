@@ -6,7 +6,7 @@
 2. ブランチを切る：`feat/<内容>`、`fix/<内容>`、`questions/<分野>`
 3. 変更して `npm test` と `npm run typecheck` を通す
 4. PR を作る（本文に `Closes #<Issue番号>`）。CI が自動で走る
-5. 内容を確認して **Squash and merge**
+5. 内容を確認して **Merge pull request**（マージコミット。ブランチ内のコミットもそのまま残る）
 6. `main` に入ると GitHub Actions が自動で GitHub Pages に配信する（2〜3 分）
 
 ## リリースとタグ
