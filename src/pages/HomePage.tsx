@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQuestionBank } from '../questions/bank';
+import { questions } from '../questions';
 import { topicLabel } from '../questions/topics';
 import { computeOverallStats, computeTopicStats } from '../core/stats';
 import { EVALUATION_LABEL } from '../core/evaluation';
@@ -14,7 +14,6 @@ export function HomePage() {
   const navigate = useNavigate();
   const { answers, loading } = useAnswers();
   const { settings } = useSettings();
-  const { questions } = useQuestionBank();
   const session = loadSession();
   const inProgress = session && !isComplete(session);
   const finished = session && isComplete(session);

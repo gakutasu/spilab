@@ -15,33 +15,17 @@ create table if not exists public.answers (
 
 create index if not exists answers_user_created_idx on public.answers (user_id, created_at);
 
-create table if not exists public.generated_questions (
-  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  id text not null,
-  data jsonb not null,
-  created_at timestamptz not null default now(),
-  primary key (user_id, id)
-);
-
 create table if not exists public.settings (
   user_id uuid primary key default auth.uid() references auth.users (id) on delete cascade,
   questions_per_day integer not null default 7,
-  ai_model text not null default 'claude-opus-5',
-  ai_verify boolean not null default true,
   updated_at timestamptz not null default now()
 );
 
 alter table public.answers enable row level security;
-alter table public.generated_questions enable row level security;
 alter table public.settings enable row level security;
 
 drop policy if exists "answers owner" on public.answers;
 create policy "answers owner" on public.answers
-  for all to authenticated
-  using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
-drop policy if exists "generated owner" on public.generated_questions;
-create policy "generated owner" on public.generated_questions
   for all to authenticated
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 

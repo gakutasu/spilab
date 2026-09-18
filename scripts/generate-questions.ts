@@ -1,0 +1,134 @@
+/**
+ * Developer tool: generate candidate SPI questions with Claude, verify them with an
+ * independent solve, and write a draft TypeScript file for manual review.
+ *
+ *   ANTHROPIC_API_KEY=... npx tsx scripts/generate-questions.ts --topic probability --count 5
+ *
+ * Options: --topic <id> (required) --count <n> (default 3) --difficulty <1|2|3>
+ *          --model <id> (default claude-opus-5) --no-verify
+ * Output:  src/questions/drafts/<topic>-<timestamp>.ts  (git-ignored; move approved
+ *          items into the topic file under src/questions/<category>/).
+ */
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import Anthropic from '@anthropic-ai/sdk';
+import type { Question } from '../src/types';
+import { questions } from '../src/questions/index';
+import { TOPICS, isTopicId, type TopicId } from '../src/questions/topics';
+import { generateQuestions, verifyQuestion, describeApiError, type GeneratedDraft } from '../src/ai/generate';
+
+interface Args {
+  topic: TopicId;
+  count: number;
+  difficulty: 1 | 2 | 3 | null;
+  model: string;
+  verify: boolean;
+}
+
+function parseArgs(argv: string[]): Args {
+  const get = (name: string): string | undefined => {
+    const i = argv.indexOf(`--${name}`);
+    return i >= 0 ? argv[i + 1] : undefined;
+  };
+  const topic = get('topic');
+  if (!topic || !isTopicId(topic)) {
+    console.error(`--topic is required. One of: ${Object.keys(TOPICS).join(', ')}`);
+    process.exit(1);
+  }
+  const d = get('difficulty');
+  return {
+    topic,
+    count: Number(get('count') ?? 3),
+    difficulty: d === '1' || d === '2' || d === '3' ? (Number(d) as 1 | 2 | 3) : null,
+    model: get('model') ?? 'claude-opus-5',
+    verify: !argv.includes('--no-verify'),
+  };
+}
+
+/** Next sequential id for the topic, e.g. nonverbal-probability-012. */
+function idAllocator(topic: TopicId): (index: number) => string {
+  const prefix = `${TOPICS[topic].category}-${topic.replace(/_/g, '-')}-`;
+  const max = questions
+    .filter((q) => q.id.startsWith(prefix))
+    .map((q) => Number(q.id.slice(prefix.length)))
+    .filter((n) => Number.isFinite(n))
+    .reduce((m, n) => Math.max(m, n), 0);
+  return (index) => `${prefix}${String(max + 1 + index).padStart(3, '0')}`;
+}
+
+function tsString(value: string): string {
+  return value.includes('\n') ? '`' + value.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${') + '`' : JSON.stringify(value);
+}
+
+function serialize(q: Question): string {
+  const lines = [
+    `    id: ${JSON.stringify(q.id)},`,
+    `    category: ${JSON.stringify(q.category)},`,
+    `    topic: ${JSON.stringify(q.topic)},`,
+    q.subtopic ? `    subtopic: ${JSON.stringify(q.subtopic)},` : null,
+    `    difficulty: ${q.difficulty},`,
+    `    question: ${tsString(q.question)},`,
+    q.passage ? `    passage: ${tsString(q.passage)},` : null,
+    `    choices: [${q.choices.map((c) => JSON.stringify(c)).join(', ')}],`,
+    `    correctChoice: ${q.correctChoice},`,
+    `    recommendedTime: ${q.recommendedTime},`,
+    `    explanation: ${tsString(q.explanation)},`,
+    `    tags: [${q.tags.map((t) => JSON.stringify(t)).join(', ')}],`,
+  ].filter((l): l is string => l !== null);
+  return `  {\n${lines.join('\n')}\n  },`;
+}
+
+function verdict(d: GeneratedDraft): string {
+  if (!d.verification) return 'not verified';
+  const v = d.verification;
+  return v.agrees ? `OK (${v.confidence})${v.issues ? ` issues: ${v.issues}` : ''}` : `MISMATCH: verifier chose index ${v.answerIndex} (${v.confidence}) ${v.reasoning}`;
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const client = new Anthropic();
+  const inTopic = questions.filter((q) => q.topic === args.topic);
+  const nextId = idAllocator(args.topic);
+
+  console.log(`Generating ${args.count} ${args.topic} question(s) with ${args.model}...`);
+  const { drafts, errors } = await generateQuestions(client, {
+    model: args.model,
+    topic: args.topic,
+    count: args.count,
+    difficulty: args.difficulty,
+    examples: inTopic.slice(0, 2),
+    existingStems: inTopic.map((q) => q.question.split('\n')[0]!.slice(0, 40)),
+    nextId,
+  });
+  for (const e of errors) console.warn(`skipped: ${e}`);
+
+  if (args.verify) {
+    for (const [i, d] of drafts.entries()) {
+      process.stdout.write(`Verifying ${i + 1}/${drafts.length}... `);
+      try {
+        d.verification = await verifyQuestion(client, args.model, d.question);
+        console.log(verdict(d));
+      } catch (e) {
+        console.log(`failed: ${describeApiError(e)}`);
+      }
+    }
+  }
+
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+  const dir = join('src', 'questions', 'drafts');
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, `${args.topic}-${stamp}.ts`);
+  const body = drafts
+    .map((d) => `  // verify: ${verdict(d)}\n  // selfCheck: ${d.selfCheck.replace(/\n/g, ' ')}\n${serialize(d.question)}`)
+    .join('\n');
+  writeFileSync(
+    file,
+    `// Generated by scripts/generate-questions.ts (${args.model}). Review, then move approved items into the topic file.\nimport type { Question } from '../../types';\n\nexport const draftQuestions: Question[] = [\n${body}\n];\n`,
+  );
+  console.log(`\nWrote ${drafts.length} draft(s) to ${file}`);
+}
+
+main().catch((e) => {
+  console.error(describeApiError(e));
+  process.exit(1);
+});

@@ -6,11 +6,6 @@ import { GENERATION_SCHEMA, VERIFY_SCHEMA } from './schema';
 import { SYSTEM_PROMPT, VERIFY_SYSTEM_PROMPT, buildGenerationPrompt, buildVerifyPrompt } from './prompts';
 import { modelOption } from './models';
 
-export function createClient(apiKey: string): Anthropic {
-  // The key lives only in this browser; requests go straight to Anthropic.
-  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
-}
-
 export interface Verification {
   answerIndex: number;
   agrees: boolean;
@@ -23,13 +18,6 @@ export interface GeneratedDraft {
   question: Question;
   selfCheck: string;
   verification: Verification | null;
-}
-
-export function generatedId(topic: TopicId, now: Date, random: () => number = Math.random): string {
-  const rand = Math.floor(random() * 36 ** 4)
-    .toString(36)
-    .padStart(4, '0');
-  return `ai-${topic.replace(/_/g, '-')}-${now.getTime().toString(36)}-${rand}`;
 }
 
 interface RawGenerated {
@@ -48,7 +36,7 @@ interface RawGenerated {
 /** Converts the model's JSON text into validated questions. Invalid items are reported, not thrown. */
 export function parseGeneratedPayload(
   text: string,
-  ctx: { topic: TopicId; model: string; now: Date; random?: () => number },
+  ctx: { topic: TopicId; nextId: (index: number) => string },
 ): { drafts: GeneratedDraft[]; errors: string[] } {
   let parsed: unknown;
   try {
@@ -65,7 +53,7 @@ export function parseGeneratedPayload(
     const r = item as Partial<RawGenerated>;
     const choices = Array.isArray(r.choices) ? r.choices.map((c) => String(c).trim()) : [];
     const question: Question = {
-      id: generatedId(ctx.topic, ctx.now, ctx.random),
+      id: ctx.nextId(i),
       category: TOPICS[ctx.topic].category,
       topic: ctx.topic,
       subtopic: typeof r.subtopic === 'string' && r.subtopic ? r.subtopic : undefined,
@@ -77,9 +65,6 @@ export function parseGeneratedPayload(
       recommendedTime: typeof r.recommendedTime === 'number' && r.recommendedTime > 0 ? Math.round(r.recommendedTime) : 60,
       explanation: typeof r.explanation === 'string' ? r.explanation.trim() : '',
       tags: Array.isArray(r.tags) ? r.tags.map(String).filter(Boolean) : [],
-      source: 'ai',
-      createdAt: ctx.now.toISOString(),
-      generatedBy: ctx.model,
     };
     if (choices.length !== 4) {
       errors.push(`${i + 1}問目: 選択肢が4つではありません。`);
@@ -117,7 +102,8 @@ export interface GenerateOptions {
   difficulty: 1 | 2 | 3 | null;
   examples: Question[];
   existingStems: string[];
-  now?: Date;
+  /** Allocates the built-in style id for the i-th generated question. */
+  nextId: (index: number) => string;
 }
 
 export async function generateQuestions(client: Anthropic, opts: GenerateOptions): Promise<{ drafts: GeneratedDraft[]; errors: string[] }> {
@@ -135,7 +121,7 @@ export async function generateQuestions(client: Anthropic, opts: GenerateOptions
   });
   if (response.stop_reason === 'refusal') throw new Error('モデルが生成を拒否しました。分野や条件を変えて再試行してください。');
   if (response.stop_reason === 'max_tokens') throw new Error('応答が長すぎて途中で切れました。作成数を減らして再試行してください。');
-  return parseGeneratedPayload(textOf(response.content), { topic: opts.topic, model: opts.model, now: opts.now ?? new Date() });
+  return parseGeneratedPayload(textOf(response.content), { topic: opts.topic, nextId: opts.nextId });
 }
 
 export function parseVerification(text: string, correctChoice: number): Verification {

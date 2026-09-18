@@ -271,3 +271,11 @@ Supabase（Auth + Postgres + RLS）で複数端末の同期を提供する。未
 - 即時 push: 回答保存・生成問題保存/削除・設定変更のたびに `SyncProvider` の after-hook が push。失敗は画面上のエラー表示のみで、次回 `syncAll` が補完
 - 「学習履歴をすべて削除」はログイン中ならクラウド側も削除（確認文に明記）
 - API キーはローカルの `secrets` ストアのみ。同期・export とも対象外
+
+## 13. AI 問題生成の方針変更（2026-09-19）
+
+利用者ごとに閉じた生成問題は共有されず価値が薄いため、アプリ内の AI 生成機能（11 章）は削除。代わりに開発者用 CLI `scripts/generate-questions.ts`（`npm run generate`）で下書きを生成・検算し、レビュー後に組み込み問題として追加する運用にする。生成・検算のプロンプトと構造化出力は 11 章のものを流用。IndexedDB の `secrets` / `generatedQuestions` ストアは互換のため定義のみ残し未使用。Supabase の `generated_questions` テーブルと `settings.ai_*` 列は `supabase/migrations/` で削除。
+
+## 14. 出題画面の変更（2026-09-19）
+
+「問題をはじめる」前は分野名と目安時間のみ表示し、問題文・選択肢はタイマー開始と同時に表示する（開始前に問題を読める状態をなくす）。

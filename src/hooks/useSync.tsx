@@ -1,18 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import type { AnswerRecord, Question, Settings } from '../types';
+import type { AnswerRecord, Settings } from '../types';
 import { SYNC_CONFIGURED, supabase, type OAuthProvider } from '../storage/supabase';
-import {
-  deleteAnswersRemote,
-  deleteGeneratedRemote,
-  loadLastSyncAt,
-  pushAnswers,
-  pushGenerated,
-  pushSettings,
-  saveLastSyncAt,
-  syncAll,
-} from '../storage/sync';
-import { useQuestionBank } from '../questions/bank';
+import { deleteAnswersRemote, loadLastSyncAt, pushAnswers, pushSettings, saveLastSyncAt, syncAll } from '../storage/sync';
 
 export interface SyncUser {
   id: string;
@@ -31,8 +21,6 @@ export interface SyncContextValue {
   signOut: () => Promise<void>;
   syncNow: () => Promise<void>;
   afterAnswer: (record: AnswerRecord) => void;
-  afterGeneratedSaved: (questions: Question[]) => void;
-  afterGeneratedDeleted: (ids: string[] | 'all') => void;
   afterSettingsChanged: (settings: Settings) => void;
   afterAnswersCleared: () => Promise<void>;
 }
@@ -49,8 +37,6 @@ const disabled: SyncContextValue = {
   signOut: async () => undefined,
   syncNow: async () => undefined,
   afterAnswer: noop,
-  afterGeneratedSaved: noop,
-  afterGeneratedDeleted: noop,
   afterSettingsChanged: noop,
   afterAnswersCleared: async () => undefined,
 };
@@ -75,7 +61,6 @@ function cleanOAuthUrl() {
 
 export function SyncProvider({ children }: { children: ReactNode }) {
   const client = supabase();
-  const bank = useQuestionBank();
   const [user, setUser] = useState<SyncUser | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(() => loadLastSyncAt());
@@ -92,17 +77,14 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       try {
         const result = await syncAll(client, u.id);
         setLastSyncAt(loadLastSyncAt());
-        if (result.pulledAnswers || result.pulledGenerated || result.settingsApplied) {
-          await bank.reload();
-          setVersion((v) => v + 1);
-        }
+        if (result.pulledAnswers || result.settingsApplied) setVersion((v) => v + 1);
       } catch (e) {
         setError(describe(e));
       } finally {
         setSyncing(false);
       }
     },
-    [client, bank],
+    [client],
   );
 
   useEffect(() => {
@@ -131,9 +113,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       active = false;
       sub.subscription.unsubscribe();
     };
-    // runSync identity changes with bank; the initial sync must run once per mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client]);
+  }, [client, runSync]);
 
   const guarded = useCallback(
     (work: (u: SyncUser) => Promise<void>) => {
@@ -167,8 +147,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         if (u) await runSync(u);
       },
       afterAnswer: (record) => guarded((u) => pushAnswers(client, u.id, [record])),
-      afterGeneratedSaved: (questions) => guarded((u) => pushGenerated(client, u.id, questions)),
-      afterGeneratedDeleted: (ids) => guarded((u) => deleteGeneratedRemote(client, u.id, ids)),
       afterSettingsChanged: (settings) => guarded((u) => pushSettings(client, u.id, settings)),
       afterAnswersCleared: async () => {
         const u = userRef.current;

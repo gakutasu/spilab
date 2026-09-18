@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { AnswerRecord, Question } from '../types';
-import { useQuestionBank } from '../questions/bank';
-import { topicLabel } from '../questions/topics';
+import { getQuestion, questions } from '../questions';
+import { CATEGORY_LABEL, topicLabel } from '../questions/topics';
 import { selectQuestions } from '../core/selection';
 import { randomRng } from '../core/rng';
 import { computeTopicStats } from '../core/stats';
@@ -54,7 +54,6 @@ export function SessionPage() {
   const navigate = useNavigate();
   const { answers, loading, reload } = useAnswers();
   const { settings, loading: settingsLoading } = useSettings();
-  const { questions, getQuestion, loading: bankLoading } = useQuestionBank();
   const { afterAnswer } = useSync();
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -62,7 +61,7 @@ export function SessionPage() {
   const initialized = useRef(false);
 
   useEffect(() => {
-    if (loading || settingsLoading || bankLoading || initialized.current) return;
+    if (loading || settingsLoading || initialized.current) return;
     initialized.current = true;
     const existing = loadSession();
     if (existing && isComplete(existing)) {
@@ -81,7 +80,7 @@ export function SessionPage() {
     const fresh = createSession(picked.map((q) => q.id), todayKey());
     saveSession(fresh);
     setSession(fresh);
-  }, [loading, settingsLoading, bankLoading, answers, questions, settings.questionsPerDay, navigate]);
+  }, [loading, settingsLoading, answers, settings.questionsPerDay, navigate]);
 
   const questionId = session ? currentQuestionId(session) : null;
   const question = questionId ? getQuestion(questionId) : undefined;
@@ -90,7 +89,7 @@ export function SessionPage() {
   useEffect(() => {
     if (!session || session.phase !== 'answered' || !question || !session.lastResult || feedback) return;
     setFeedback(feedbackFor(questions, question, session.lastResult, withoutLatest(answers, question.id), answers));
-  }, [session, question, questions, answers, feedback]);
+  }, [session, question, answers, feedback]);
 
   const update = useCallback((next: ActiveSession) => {
     saveSession(next);
@@ -169,24 +168,23 @@ export function SessionPage() {
         <span className="progress">
           問題 {session.currentIndex + 1} / {session.questionIds.length}
         </span>
-        <span className="topic-badge">
-          【{topicLabel(question.topic)}】{question.source === 'ai' && <span className="badge badge-ai">AI</span>}
-        </span>
+        <span className="topic-badge">【{topicLabel(question.topic)}】</span>
       </div>
 
-      <QuestionBody question={question} />
-
       {session.phase === 'ready' && (
-        <>
-          <ChoiceList question={question} selected={null} disabled revealed={false} onSelect={() => undefined} />
+        <div className="card ready-card">
+          <p className="ready-title">{CATEGORY_LABEL[question.category]}：{topicLabel(question.topic)}</p>
+          <p className="muted">目安時間：{question.recommendedTime}秒</p>
+          <p className="muted small">ボタンを押すと問題が表示され、同時にタイマーが始まります。</p>
           <div className="actions">
             <button type="button" className="btn btn-primary btn-lg" onClick={() => update(startQuestion(session, Date.now()))}>
               問題をはじめる
             </button>
-            <p className="muted small">目安時間：{question.recommendedTime}秒。ボタンを押すとタイマーが始まります。</p>
           </div>
-        </>
+        </div>
       )}
+
+      {session.phase !== 'ready' && <QuestionBody question={question} />}
 
       {session.phase === 'answering' && (
         <>

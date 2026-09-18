@@ -1,8 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AnswerRecord, Question, Settings } from '../types';
+import type { AnswerRecord, Settings } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
-import { validateQuestions } from '../questions/validate';
-import { addGeneratedQuestions, getAllAnswers, getGeneratedQuestions, getSettings, importAnswers, saveSettings } from './db';
+import { getAllAnswers, getSettings, importAnswers, saveSettings } from './db';
 
 export const LAST_SYNC_KEY = 'spilab.lastSyncAt';
 const CHUNK = 500;
@@ -17,17 +16,9 @@ export interface AnswerRow {
   created_at?: string;
 }
 
-export interface GeneratedRow {
-  user_id: string;
-  id: string;
-  data: Question;
-}
-
 export interface SettingsRow {
   user_id: string;
   questions_per_day: number;
-  ai_model: string;
-  ai_verify: boolean;
   updated_at?: string;
 }
 
@@ -53,15 +44,11 @@ export function fromAnswerRow(row: AnswerRow): AnswerRecord {
 }
 
 export function toSettingsRow(userId: string, s: Settings): SettingsRow {
-  return { user_id: userId, questions_per_day: s.questionsPerDay, ai_model: s.aiModel, ai_verify: s.aiVerify };
+  return { user_id: userId, questions_per_day: s.questionsPerDay };
 }
 
 export function fromSettingsRow(row: Partial<SettingsRow>): Settings {
-  return {
-    questionsPerDay: typeof row.questions_per_day === 'number' ? row.questions_per_day : DEFAULT_SETTINGS.questionsPerDay,
-    aiModel: typeof row.ai_model === 'string' ? row.ai_model : DEFAULT_SETTINGS.aiModel,
-    aiVerify: typeof row.ai_verify === 'boolean' ? row.ai_verify : DEFAULT_SETTINGS.aiVerify,
-  };
+  return { questionsPerDay: typeof row.questions_per_day === 'number' ? row.questions_per_day : DEFAULT_SETTINGS.questionsPerDay };
 }
 
 /** Latest created_at among pulled rows, or the previous watermark when nothing was pulled. */
@@ -107,20 +94,6 @@ export async function pushAnswers(client: SupabaseClient, userId: string, record
   }
 }
 
-export async function pushGenerated(client: SupabaseClient, userId: string, questions: Question[]): Promise<void> {
-  if (questions.length === 0) return;
-  const rows: GeneratedRow[] = questions.map((q) => ({ user_id: userId, id: q.id, data: q }));
-  const { error } = await client.from('generated_questions').upsert(rows, { onConflict: 'user_id,id' });
-  fail('generated push', error);
-}
-
-export async function deleteGeneratedRemote(client: SupabaseClient, userId: string, ids: string[] | 'all'): Promise<void> {
-  let query = client.from('generated_questions').delete().eq('user_id', userId);
-  if (ids !== 'all') query = query.in('id', ids);
-  const { error } = await query;
-  fail('generated delete', error);
-}
-
 export async function deleteAnswersRemote(client: SupabaseClient, userId: string): Promise<void> {
   const { error } = await client.from('answers').delete().eq('user_id', userId);
   fail('answers delete', error);
@@ -134,7 +107,6 @@ export async function pushSettings(client: SupabaseClient, userId: string, setti
 
 export interface SyncResult {
   pulledAnswers: number;
-  pulledGenerated: number;
   settingsApplied: boolean;
 }
 
@@ -153,11 +125,6 @@ export async function syncAll(client: SupabaseClient, userId: string): Promise<S
   const remoteAnswers = (answersRes.data ?? []) as AnswerRow[];
   const pulledAnswers = await importAnswers(remoteAnswers.map(fromAnswerRow));
 
-  const generatedRes = await client.from('generated_questions').select('id,data').eq('user_id', userId);
-  fail('generated pull', generatedRes.error);
-  const remoteGenerated = ((generatedRes.data ?? []) as Array<{ data: Question }>).map((r) => r.data);
-  const validGenerated = remoteGenerated.filter((q) => validateQuestions([q]).length === 0);
-  const pulledGenerated = await addGeneratedQuestions(validGenerated);
 
   let settingsApplied = false;
   if (firstSync) {
@@ -170,9 +137,8 @@ export async function syncAll(client: SupabaseClient, userId: string): Promise<S
   }
 
   await pushAnswers(client, userId, await getAllAnswers());
-  await pushGenerated(client, userId, await getGeneratedQuestions());
   await pushSettings(client, userId, await getSettings());
 
   saveLastSyncAt(nextWatermark(since, remoteAnswers) ?? new Date().toISOString());
-  return { pulledAnswers, pulledGenerated, settingsApplied };
+  return { pulledAnswers, settingsApplied };
 }

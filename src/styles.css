@@ -765,3 +765,27 @@ tbody tr:hover {
   white-space: normal;
   min-width: 200px;
 }
+
+/* Login buttons */
+.btn-provider {
+  gap: 10px;
+  font-weight: 600;
+}
+
+.provider-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+
+/* Ready state before the timer starts */
+.ready-card {
+  text-align: center;
+  padding: 28px var(--space);
+}
+
+.ready-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}

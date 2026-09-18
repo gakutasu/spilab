@@ -11,25 +11,28 @@ README に収まらない詳細手順をまとめています。
 
 `BASE_PATH` はリポジトリ名から自動設定されます。ローカルで別のサブパスにしたい場合は `BASE_PATH=/my-repo/ npm run build`。
 
-## 2. AI 問題生成（Anthropic API）
+## 2. Claude で問題案を作る（開発者用 CLI）
 
-1. [Anthropic Console](https://console.anthropic.com/) で API キーを発行する
-2. アプリの **設定 → AI問題生成** に API キーを保存し、モデルを選ぶ（既定は Claude Opus 5）
-3. **AI作成** 画面で分野・作成数・難易度を選び「生成する」
-4. 生成結果を確認し、問題ごとに「保存」または「破棄」
+アプリ内には AI 機能はありません。問題は開発者がリポジトリに追加し、全ユーザーに配信されます。その下書きを Claude に作らせる CLI です。
 
-- API キーはこのブラウザの IndexedDB にのみ保存され、Anthropic API 以外には送信されません。書き出し JSON・クラウド同期にも含まれません
-- 生成は JSON Schema の構造化出力を使い、アプリ側でも問題データを検証します
-- 「検算」を有効にすると、解説を見せずにもう一度解かせて正解の一致を確認します。不一致には警告が付きます
-- 保存した問題は通常の出題・履歴・評価の対象になります（ID は `ai-<分野>-…`）
-- API 利用料金はキーの持ち主に課金されます
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+npm run generate -- --topic probability --count 5            # 難易度混合
+npm run generate -- --topic permutation --count 3 --difficulty 3
+npm run generate -- --topic reading --count 2 --model claude-sonnet-5 --no-verify
+```
+
+- 既存問題の例と既出問題文を渡して重複を避け、JSON Schema で構造化出力させ、アプリと同じバリデーションを通します
+- 既定で「検算」を行います。解説を見せずにもう一度解かせ、正解が一致するかを各問に記録します（`// verify: OK` / `MISMATCH`）
+- 出力先は `src/questions/drafts/<topic>-<日時>.ts`（git 管理外）。ID は該当分野の連番を自動採番します
+- 内容を確認し、採用する問題を `src/questions/<category>/<topic>.ts` の配列へ移して `npm test` を通してからコミットしてください。MISMATCH の問題はそのまま採用しないこと
 
 ## 3. クラウド同期（Supabase）
 
 未設定でも動きます。複数端末で履歴を共有したい場合のみ設定します。
 
 1. [Supabase](https://supabase.com/) でプロジェクトを作成（無料枠で可）
-2. **SQL Editor** で [supabase/schema.sql](../supabase/schema.sql) を実行（3 テーブル + Row Level Security）
+2. **SQL Editor** で [supabase/schema.sql](../supabase/schema.sql) を実行（2 テーブル + Row Level Security）。以前の版で作成済みの場合は [supabase/migrations/](../supabase/migrations/) の SQL も実行
 3. **Authentication → Providers** で Google / GitHub を有効化。各プロバイダの OAuth アプリのコールバック URL に Supabase が表示する `https://<project>.supabase.co/auth/v1/callback` を登録
 4. **Authentication → URL Configuration → Redirect URLs** に公開 URL（例 `https://<user>.github.io/spilab/`）と `http://localhost:5173/spilab/` を追加
 5. **Project Settings → API** の Project URL と anon key を設定
@@ -42,7 +45,7 @@ README に収まらない詳細手順をまとめています。
 
 - ログインは Supabase Auth の OAuth（PKCE）。パスワードは扱いません
 - 回答は追記のみのレコードなので、ローカルとクラウドを「重複を除いた和集合」でマージします。競合は起きません
-- 同期対象は回答履歴・AI 生成問題・設定。Anthropic API キーは同期しません
+- 同期対象は回答履歴と設定
 - 「学習履歴をすべて削除」はログイン中ならクラウド側も削除します
 
 ## 4. 問題を追加する

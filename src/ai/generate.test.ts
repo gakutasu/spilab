@@ -1,8 +1,8 @@
 import type { Question } from '../types';
-import { parseGeneratedPayload, parseVerification, generatedId } from './generate';
+import { parseGeneratedPayload, parseVerification } from './generate';
 import { buildGenerationPrompt, buildVerifyPrompt } from './prompts';
 
-const NOW = new Date('2026-09-18T00:00:00.000Z');
+const nextId = (i: number) => `nonverbal-probability-${String(100 + i).padStart(3, '0')}`;
 
 const valid = {
   question: '2個のサイコロを振って和が7になる確率は？',
@@ -17,29 +17,13 @@ const valid = {
   selfCheck: '(1,6),(2,5),(3,4),(4,3),(5,2),(6,1) の6通り。6/36=1/6。一致。',
 };
 
-describe('generatedId', () => {
-  it('matches the validator id pattern and encodes the topic', () => {
-    const id = generatedId('profit_loss', NOW, () => 0.5);
-    expect(id).toMatch(/^[a-z0-9-]+$/);
-    expect(id.startsWith('ai-profit-loss-')).toBe(true);
-  });
-});
-
 describe('parseGeneratedPayload', () => {
-  it('builds validated questions with AI metadata', () => {
-    const { drafts, errors } = parseGeneratedPayload(JSON.stringify({ questions: [valid] }), { topic: 'probability', model: 'claude-opus-5', now: NOW });
+  it('builds validated questions with sequential ids', () => {
+    const { drafts, errors } = parseGeneratedPayload(JSON.stringify({ questions: [valid] }), { topic: 'probability', nextId });
     expect(errors).toEqual([]);
     expect(drafts).toHaveLength(1);
     const q = drafts[0]!.question;
-    expect(q).toMatchObject({
-      category: 'nonverbal',
-      topic: 'probability',
-      subtopic: 'dice',
-      correctChoice: 0,
-      source: 'ai',
-      generatedBy: 'claude-opus-5',
-      createdAt: NOW.toISOString(),
-    });
+    expect(q).toMatchObject({ id: 'nonverbal-probability-100', category: 'nonverbal', topic: 'probability', subtopic: 'dice', correctChoice: 0 });
     expect(q.passage).toBeUndefined();
     expect(drafts[0]!.selfCheck).toContain('一致');
   });
@@ -53,7 +37,7 @@ describe('parseGeneratedPayload', () => {
         valid,
       ],
     };
-    const { drafts, errors } = parseGeneratedPayload(JSON.stringify(payload), { topic: 'probability', model: 'm', now: NOW });
+    const { drafts, errors } = parseGeneratedPayload(JSON.stringify(payload), { topic: 'probability', nextId });
     expect(drafts).toHaveLength(1);
     expect(errors).toHaveLength(3);
     expect(errors[0]).toContain('1問目');
@@ -62,13 +46,13 @@ describe('parseGeneratedPayload', () => {
   });
 
   it('handles non-JSON and missing array', () => {
-    expect(parseGeneratedPayload('nope', { topic: 'ratio', model: 'm', now: NOW }).errors[0]).toContain('JSON');
-    expect(parseGeneratedPayload('{}', { topic: 'ratio', model: 'm', now: NOW }).errors[0]).toContain('questions');
+    expect(parseGeneratedPayload('nope', { topic: 'ratio', nextId }).errors[0]).toContain('JSON');
+    expect(parseGeneratedPayload('{}', { topic: 'ratio', nextId }).errors[0]).toContain('questions');
   });
 
-  it('gives each draft a unique id', () => {
-    const { drafts } = parseGeneratedPayload(JSON.stringify({ questions: [valid, valid, valid] }), { topic: 'probability', model: 'm', now: NOW });
-    expect(new Set(drafts.map((d) => d.question.id)).size).toBe(3);
+  it('gives each draft a sequential id', () => {
+    const { drafts } = parseGeneratedPayload(JSON.stringify({ questions: [valid, valid, valid] }), { topic: 'probability', nextId });
+    expect(drafts.map((d) => d.question.id)).toEqual(['nonverbal-probability-100', 'nonverbal-probability-101', 'nonverbal-probability-102']);
   });
 });
 
