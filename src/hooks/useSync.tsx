@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import type { AnswerRecord, Question, Settings } from '../types';
-import { SYNC_CONFIGURED, supabase } from '../storage/supabase';
+import { SYNC_CONFIGURED, supabase, type OAuthProvider } from '../storage/supabase';
 import {
   deleteAnswersRemote,
   deleteGeneratedRemote,
@@ -13,8 +13,6 @@ import {
   syncAll,
 } from '../storage/sync';
 import { useQuestionBank } from '../questions/bank';
-
-export type OAuthProvider = 'google' | 'github';
 
 export interface SyncUser {
   id: string;

@@ -35,6 +35,7 @@ README に収まらない詳細手順をまとめています。
 5. **Project Settings → API** の Project URL と anon key を設定
    - ローカル：`.env.local` に `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY`（[.env.example](../.env.example)）
    - GitHub Pages：**Settings → Secrets and variables → Actions → Variables** に `SUPABASE_URL` と `SUPABASE_ANON_KEY`
+   - 有効にしたプロバイダだけボタンを出すには `VITE_AUTH_PROVIDERS`（Actions では `AUTH_PROVIDERS`）に `github` や `google,github` を設定（未設定なら両方表示）
 6. デプロイ後、**設定 → クラウド同期** からログイン
 
 仕組み：

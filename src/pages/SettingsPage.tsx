@@ -3,6 +3,7 @@ import { QUESTIONS_PER_DAY_OPTIONS } from '../types';
 import { useSettings } from '../hooks/useSettings';
 import { useQuestionBank } from '../questions/bank';
 import { useSync } from '../hooks/useSync';
+import { AUTH_PROVIDERS } from '../storage/supabase';
 import { formatDateTime } from '../utils/format';
 import { MODEL_OPTIONS } from '../ai/models';
 import {
@@ -133,12 +134,11 @@ export function SettingsPage() {
             <>
               <p className="muted small">ログインすると、学習履歴を複数の端末・ブラウザで共有できます。ログインしなくても、このブラウザ内で学習できます。</p>
               <div className="actions actions-row">
-                <button type="button" className="btn btn-secondary" onClick={() => void sync.signIn('google')}>
-                  Googleでログイン
-                </button>
-                <button type="button" className="btn btn-secondary" onClick={() => void sync.signIn('github')}>
-                  GitHubでログイン
-                </button>
+                {AUTH_PROVIDERS.map((p) => (
+                  <button key={p} type="button" className="btn btn-secondary" onClick={() => void sync.signIn(p)}>
+                    {p === 'google' ? 'Googleでログイン' : 'GitHubでログイン'}
+                  </button>
+                ))}
               </div>
             </>
           )}
