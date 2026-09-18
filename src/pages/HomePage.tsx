@@ -36,7 +36,14 @@ export function HomePage() {
       <section className="hero">
         <p className="hero-kicker">転職向け SPI 対策</p>
         <h1 className="hero-message">{message.text}</h1>
-        {message.by ? <p className="hero-by">— {message.by}</p> : <p className="lead">1問ずつ解いて、苦手な分野から優先的に出題。</p>}
+        {message.by ? (
+          <p className="hero-by">
+            — {message.by}
+            {message.meaning && <span className="hero-meaning">（{message.meaning}）</span>}
+          </p>
+        ) : (
+          <p className="lead">1問ずつ解いて、苦手な分野から優先的に出題。</p>
+        )}
         {inProgress ? (
           <>
             <button type="button" className="btn btn-primary btn-lg btn-hero" onClick={() => navigate('/session')}>
