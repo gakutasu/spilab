@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { QUESTIONS_PER_DAY_OPTIONS } from '../types';
 import { useSettings } from '../hooks/useSettings';
 import { useSync } from '../hooks/useSync';
+import { useIntro } from '../hooks/useIntro';
 import { AUTH_PROVIDERS } from '../storage/supabase';
 import { ProviderIcon } from '../components/ProviderIcon';
 import { formatDateTime } from '../utils/format';
@@ -14,6 +15,7 @@ type Notice = { kind: 'ok' | 'ng'; text: string } | null;
 export function SettingsPage() {
   const { settings, update } = useSettings();
   const sync = useSync();
+  const intro = useIntro();
   const [notice, setNotice] = useState<Notice>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -132,11 +134,37 @@ export function SettingsPage() {
       </section>
 
       <section className="card">
+        <h2>使い方</h2>
+        <div className="actions">
+          <button type="button" className="btn btn-secondary" onClick={intro.open}>
+            はじめての案内をもう一度見る
+          </button>
+        </div>
+      </section>
+
+      <section className="card">
         <h2>リセット</h2>
         <div className="actions">
           <button type="button" className="btn btn-danger" onClick={() => void resetAnswers()}>
             学習履歴をすべて削除
           </button>
+        </div>
+      </section>
+
+      <section className="card about">
+        <h2>このアプリについて</h2>
+        <p className="small">
+          SPILAB v{__APP_VERSION__} — 転職向け SPI 対策の個人開発アプリ。MIT License。
+        </p>
+        <div className="about-links">
+          <a className="about-link" href="https://github.com/gakutasu" target="_blank" rel="noreferrer">
+            <ProviderIcon provider="github" />
+            作者：gakutasu
+          </a>
+          <a className="about-link" href="https://github.com/gakutasu/spilab" target="_blank" rel="noreferrer">
+            <ProviderIcon provider="github" />
+            ソースコード・不具合報告
+          </a>
         </div>
       </section>
     </div>
