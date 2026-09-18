@@ -4,11 +4,18 @@ import { questions } from '../questions';
 import { CATEGORY_LABEL, topicLabel } from '../questions/topics';
 import { computeAllQuestionStats, computeOverallStats, computeTopicStats } from '../core/stats';
 import { useAnswers } from '../hooks/useAnswers';
+import { useSettings } from '../hooks/useSettings';
+import { analyzeTopics, forecastNextSession, recentTrend } from '../core/analysis';
+import { ForecastPanel, TopicBars, TrendNote } from '../components/TopicOverview';
 import { EvalBadge } from '../components/EvalBadge';
 import { formatPercent, formatSeconds } from '../utils/format';
 
 export function HistoryPage() {
   const { answers, loading } = useAnswers();
+  const { settings } = useSettings();
+  const insights = useMemo(() => analyzeTopics(questions, answers), [answers]);
+  const forecast = useMemo(() => forecastNextSession(questions, answers, settings.questionsPerDay), [answers, settings.questionsPerDay]);
+  const trend = useMemo(() => recentTrend(answers), [answers]);
 
   const overall = useMemo(() => computeOverallStats(questions, answers), [answers]);
   const topics = useMemo(() => [...computeTopicStats(questions, answers).values()], [answers]);
@@ -66,6 +73,17 @@ export function HistoryPage() {
             <span className="stat-value">{overall.studyDays}</span>
           </div>
         </div>
+      </section>
+
+      <section className="card">
+        <h2>分析</h2>
+        <TrendNote trend={trend} />
+        <TopicBars insights={insights} />
+      </section>
+
+      <section className="card">
+        <h2>次回の出題傾向</h2>
+        <ForecastPanel forecast={forecast} count={settings.questionsPerDay} />
       </section>
 
       <section className="card">

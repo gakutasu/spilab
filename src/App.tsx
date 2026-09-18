@@ -1,6 +1,7 @@
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { SyncProvider } from './hooks/useSync';
+import { IntroProvider } from './hooks/useIntro';
 import { HomePage } from './pages/HomePage';
 import { SessionPage } from './pages/SessionPage';
 import { SummaryPage } from './pages/SummaryPage';
@@ -12,6 +13,7 @@ export function App() {
   return (
     <SyncProvider>
       <HashRouter>
+        <IntroProvider>
       <Routes>
         <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
@@ -22,6 +24,7 @@ export function App() {
         <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Routes>
+        </IntroProvider>
       </HashRouter>
     </SyncProvider>
   );

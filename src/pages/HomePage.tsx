@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { questions } from '../questions';
-import { topicLabel } from '../questions/topics';
-import { computeOverallStats, computeTopicStats } from '../core/stats';
-import { EVALUATION_LABEL } from '../core/evaluation';
+import { computeOverallStats } from '../core/stats';
+import { analyzeTopics, forecastNextSession, recentTrend } from '../core/analysis';
+import { ForecastPanel, InsightList, OverviewLink, TopicBars, TrendNote } from '../components/TopicOverview';
 import { isComplete } from '../core/session';
 import { useAnswers } from '../hooks/useAnswers';
 import { useSettings } from '../hooks/useSettings';
@@ -18,13 +18,10 @@ export function HomePage() {
   const inProgress = session && !isComplete(session);
   const finished = session && isComplete(session);
 
-  const overall = useMemo(() => computeOverallStats(questions, answers), [questions, answers]);
-  const weakTopics = useMemo(() => {
-    return [...computeTopicStats(questions, answers).values()]
-      .filter((t) => t.evaluation === 'weak')
-      .sort((a, b) => a.score - b.score)
-      .slice(0, 3);
-  }, [questions, answers]);
+  const overall = useMemo(() => computeOverallStats(questions, answers), [answers]);
+  const insights = useMemo(() => analyzeTopics(questions, answers), [answers]);
+  const forecast = useMemo(() => forecastNextSession(questions, answers, settings.questionsPerDay), [answers, settings.questionsPerDay]);
+  const trend = useMemo(() => recentTrend(answers), [answers]);
 
   const startNew = () => {
     clearSession();
@@ -62,31 +59,33 @@ export function HomePage() {
       </section>
 
       {!loading && overall.attemptCount > 0 && (
-        <section className="card">
-          <h2>これまでの学習</h2>
-          <div className="stat-grid">
-            <div className="stat">
-              <span className="stat-label">総回答数</span>
-              <span className="stat-value">{overall.attemptCount}</span>
+        <>
+          <section className="card">
+            <h2>得意・苦手</h2>
+            <div className="stat-grid">
+              <div className="stat">
+                <span className="stat-label">総回答数</span>
+                <span className="stat-value">{overall.attemptCount}</span>
+              </div>
+              <div className="stat">
+                <span className="stat-label">正答率</span>
+                <span className="stat-value">{formatPercent(overall.correctRate)}</span>
+              </div>
+              <div className="stat">
+                <span className="stat-label">学習日数</span>
+                <span className="stat-value">{overall.studyDays}</span>
+              </div>
             </div>
-            <div className="stat">
-              <span className="stat-label">正答率</span>
-              <span className="stat-value">{formatPercent(overall.correctRate)}</span>
-            </div>
-            <div className="stat">
-              <span className="stat-label">学習日数</span>
-              <span className="stat-value">{overall.studyDays}</span>
-            </div>
-          </div>
-          {weakTopics.length > 0 && (
-            <p className="muted">
-              重点分野：{weakTopics.map((t) => `${topicLabel(t.topic)}（${EVALUATION_LABEL[t.evaluation]}）`).join('、')}
-            </p>
-          )}
-          <Link to="/history" className="btn btn-link">
-            学習履歴を見る
-          </Link>
-        </section>
+            <TrendNote trend={trend} />
+            <TopicBars insights={insights} compact />
+            <InsightList insights={insights} />
+            <OverviewLink />
+          </section>
+          <section className="card">
+            <h2>次回の出題傾向</h2>
+            <ForecastPanel forecast={forecast} count={settings.questionsPerDay} />
+          </section>
+        </>
       )}
 
       <section className="card muted small">
