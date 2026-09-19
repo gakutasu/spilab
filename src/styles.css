@@ -1248,3 +1248,40 @@ tbody tr:hover {
   justify-content: flex-end;
   margin-top: 8px;
 }
+
+/* Brand icons */
+.brand-icon {
+  flex: 0 0 auto;
+  vertical-align: -3px;
+}
+
+.provider-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.provider-option {
+  gap: 8px;
+  font-weight: 600;
+}
+
+.provider-option.is-active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+
+.field-label-icon,
+.provider-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-avatar {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
