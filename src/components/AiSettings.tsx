@@ -3,6 +3,7 @@ import type { AiProvider } from '../types';
 import { useSettings } from '../hooks/useSettings';
 import { getSecret, saveSecret } from '../storage/db';
 import { DEFAULT_MODELS, KEY_PAGE, PROVIDER_LABEL, describeChatError, listModels, type ModelChoice } from '../ai/chat';
+import { BrandIcon } from './BrandIcon';
 
 const PROVIDERS: AiProvider[] = ['anthropic', 'openai'];
 const SECRET_KEY = { anthropic: 'anthropicApiKey', openai: 'openaiApiKey' } as const;
@@ -57,18 +58,27 @@ export function AiSettings() {
       <p className="muted small">
         採点後に、解説で足りない点を AI に質問できます。自分の API キーをブラウザに保存して直接呼び出します（このブラウザにのみ保存。同期・書き出しの対象外。利用料金はキーの持ち主に課金）。
       </p>
-      <label className="field">
+      <div className="field">
         <span>使うサービス</span>
-        <select value={provider} onChange={(e) => void update({ ...settings, aiProvider: e.target.value as AiProvider })}>
+        <div className="provider-toggle" role="radiogroup" aria-label="使うサービス">
           {PROVIDERS.map((p) => (
-            <option key={p} value={p}>
-              {PROVIDER_LABEL[p]}
-            </option>
+            <button
+              key={p}
+              type="button"
+              role="radio"
+              aria-checked={provider === p}
+              className={`btn provider-option${provider === p ? ' is-active' : ''}`}
+              onClick={() => void update({ ...settings, aiProvider: p })}
+            >
+              <BrandIcon provider={p} size={20} />
+              {p === 'anthropic' ? 'Claude' : 'OpenAI'}
+            </button>
           ))}
-        </select>
-      </label>
+        </div>
+      </div>
       <label className="field">
-        <span>
+        <span className="field-label-icon">
+          <BrandIcon provider={provider} size={16} />
           {PROVIDER_LABEL[provider]} の API キー（
           <a href={KEY_PAGE[provider]} target="_blank" rel="noreferrer">
             発行ページ

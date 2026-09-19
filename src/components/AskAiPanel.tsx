@@ -5,6 +5,7 @@ import { useSettings } from '../hooks/useSettings';
 import { getSecret } from '../storage/db';
 import { buildTutorSystemPrompt, describeChatError, streamChat, PRESET_QUESTIONS, PROVIDER_LABEL, type ChatMessage } from '../ai/chat';
 import { Markdown } from './Markdown';
+import { BrandIcon } from './BrandIcon';
 
 interface Props {
   question: Question;
@@ -91,7 +92,8 @@ export function AskAiPanel({ question, selectedChoice, result, answerTimeMs }: P
     <section className="card ask-ai">
       <div className="card-head">
         <h2>AIに質問する</h2>
-        <span className="muted small">
+        <span className="muted small provider-tag">
+          <BrandIcon provider={provider} size={14} />
           {PROVIDER_LABEL[provider]} / {model}
         </span>
       </div>
@@ -109,11 +111,19 @@ export function AskAiPanel({ question, selectedChoice, result, answerTimeMs }: P
       <div className="chat">
         {messages.map((m, i) => (
           <div key={i} className={`chat-msg chat-${m.role}`}>
-            {m.role === 'assistant' ? <Markdown text={m.content} /> : <p>{m.content}</p>}
+            {m.role === 'assistant' ? (
+              <>
+                <span className="chat-avatar"><BrandIcon provider={provider} size={14} /></span>
+                <Markdown text={m.content} />
+              </>
+            ) : (
+              <p>{m.content}</p>
+            )}
           </div>
         ))}
         {busy && (
           <div className="chat-msg chat-assistant">
+            <span className="chat-avatar"><BrandIcon provider={provider} size={14} /></span>
             {streaming ? <Markdown text={streaming} /> : <p className="muted">考え中…</p>}
           </div>
         )}
