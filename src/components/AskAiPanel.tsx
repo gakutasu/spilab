@@ -66,7 +66,7 @@ export function AskAiPanel({ question, selectedChoice, result, answerTimeMs }: P
       });
       setMessages([...next, { role: 'assistant', content: reply }]);
     } catch (e) {
-      if (!controller.signal.aborted) setError(describeChatError(e));
+      if (!controller.signal.aborted) setError(describeChatError(e, provider));
       else setMessages(next.slice(0, -1));
     } finally {
       setStreaming('');
