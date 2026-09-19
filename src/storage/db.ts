@@ -14,11 +14,11 @@ interface SpilabDB extends DBSchema {
     key: string;
     value: Settings;
   };
-  // Kept from schema v2 so existing databases open without a downgrade; no longer used.
   secrets: {
     key: string;
     value: string;
   };
+  // Kept from schema v2 so existing databases open without a downgrade; no longer used.
   generatedQuestions: {
     key: string;
     value: unknown;
@@ -86,8 +86,21 @@ export async function importAnswers(records: AnswerRecord[]): Promise<number> {
 const SETTINGS_KEY = 'settings';
 
 export async function getSettings(): Promise<Settings> {
-  const stored = await (await db()).get('settings', SETTINGS_KEY);
-  return { ...DEFAULT_SETTINGS, ...stored };
+  const stored = (await (await db()).get('settings', SETTINGS_KEY)) as Partial<Settings> | undefined;
+  return { ...DEFAULT_SETTINGS, ...stored, aiModels: { ...DEFAULT_SETTINGS.aiModels, ...stored?.aiModels } };
+}
+
+export type SecretKey = 'anthropicApiKey' | 'openaiApiKey';
+
+/** API keys stay in this browser only: never synced or exported. */
+export async function getSecret(key: SecretKey): Promise<string> {
+  return (await (await db()).get('secrets', key)) ?? '';
+}
+
+export async function saveSecret(key: SecretKey, value: string): Promise<void> {
+  const database = await db();
+  if (value) await database.put('secrets', value, key);
+  else await database.delete('secrets', key);
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {

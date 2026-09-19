@@ -34,9 +34,19 @@ export interface AnswerRecord {
   answerTimeMs: number;
 }
 
+export type AiProvider = 'anthropic' | 'openai';
+
 export interface Settings {
   questionsPerDay: number;
+  /** Provider used by the "ask AI" panel after answering. */
+  aiProvider: AiProvider;
+  /** Selected model id per provider. */
+  aiModels: Record<AiProvider, string>;
 }
 
-export const DEFAULT_SETTINGS: Settings = { questionsPerDay: 7 };
+export const DEFAULT_SETTINGS: Settings = {
+  questionsPerDay: 7,
+  aiProvider: 'anthropic',
+  aiModels: { anthropic: 'claude-opus-5', openai: 'gpt-5.4' },
+};
 export const QUESTIONS_PER_DAY_OPTIONS = [5, 7, 10, 15] as const;

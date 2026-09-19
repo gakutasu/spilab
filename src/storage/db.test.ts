@@ -7,6 +7,8 @@ import {
   getSettings,
   saveSettings,
   importAnswers,
+  getSecret,
+  saveSecret,
 } from './db';
 import { DEFAULT_SETTINGS, type AnswerRecord } from '../types';
 
@@ -63,7 +65,19 @@ describe('settings store', () => {
   it('fills defaults for missing fields', async () => {
     await saveSettings({} as never);
     expect(await getSettings()).toEqual(DEFAULT_SETTINGS);
-    await saveSettings({ questionsPerDay: 10 });
-    expect(await getSettings()).toEqual({ questionsPerDay: 10 });
+    await saveSettings({ questionsPerDay: 10 } as never);
+    expect(await getSettings()).toEqual({ ...DEFAULT_SETTINGS, questionsPerDay: 10 });
+    await saveSettings({ ...DEFAULT_SETTINGS, aiModels: { openai: 'gpt-x' } } as never);
+    expect((await getSettings()).aiModels).toEqual({ anthropic: 'claude-opus-5', openai: 'gpt-x' });
+  });
+});
+
+describe('secrets store', () => {
+  it('stores and clears keys', async () => {
+    expect(await getSecret('openaiApiKey')).toBe('');
+    await saveSecret('openaiApiKey', 'sk-test');
+    expect(await getSecret('openaiApiKey')).toBe('sk-test');
+    await saveSecret('openaiApiKey', '');
+    expect(await getSecret('openaiApiKey')).toBe('');
   });
 });

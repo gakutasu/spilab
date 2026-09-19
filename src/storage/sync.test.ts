@@ -23,9 +23,9 @@ describe('answer row mapping', () => {
 
 describe('settings row mapping', () => {
   it('round-trips and fills defaults', () => {
-    const row = toSettingsRow('u1', { questionsPerDay: 10 });
+    const row = toSettingsRow('u1', { ...DEFAULT_SETTINGS, questionsPerDay: 10 });
     expect(fromSettingsRow(row)).toEqual({ questionsPerDay: 10 });
-    expect(fromSettingsRow({})).toEqual(DEFAULT_SETTINGS);
+    expect(fromSettingsRow({})).toEqual({ questionsPerDay: DEFAULT_SETTINGS.questionsPerDay });
   });
 });
 

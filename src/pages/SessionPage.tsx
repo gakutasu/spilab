@@ -18,6 +18,7 @@ import { clearSession, loadSession, saveSession, type ActiveSession, type Sessio
 import { ChoiceList } from '../components/ChoiceList';
 import { QuestionBody } from '../components/QuestionBody';
 import { Explanation } from '../components/Explanation';
+import { AskAiPanel } from '../components/AskAiPanel';
 import { CHOICE_LABELS, formatClock, formatSeconds, todayKey } from '../utils/format';
 
 function feedbackFor(
@@ -251,6 +252,8 @@ export function SessionPage() {
             <h2>解説</h2>
             <Explanation text={question.explanation} />
           </section>
+
+          <AskAiPanel question={question} selectedChoice={last.selectedChoice} result={last.result} answerTimeMs={last.answerTimeMs} />
 
           <div className="actions">
             <button type="button" className="btn btn-primary btn-lg" onClick={goNext}>

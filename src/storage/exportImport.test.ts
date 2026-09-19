@@ -23,14 +23,14 @@ describe('exportFileName', () => {
 
 describe('parseImport', () => {
   it('accepts a valid export', () => {
-    const parsed = parseImport(JSON.stringify(buildExport({ questionsPerDay: 5 }, answers, new Date())));
+    const parsed = parseImport(JSON.stringify(buildExport({ ...DEFAULT_SETTINGS, questionsPerDay: 5 }, answers, new Date())));
     expect(parsed.answers).toHaveLength(1);
     expect(parsed.settings.questionsPerDay).toBe(5);
   });
 
   it('ignores unknown fields from older exports', () => {
     const parsed = parseImport(JSON.stringify({ app: 'spilab', version: 1, answers: [], settings: { questionsPerDay: 7, aiModel: 'x' }, generatedQuestions: [] }));
-    expect(parsed.settings).toEqual({ questionsPerDay: 7 });
+    expect(parsed.settings).toEqual(DEFAULT_SETTINGS);
   });
 
   it('rejects invalid input with Japanese messages', () => {

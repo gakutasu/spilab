@@ -17,6 +17,7 @@
     "@anthropic-ai/sdk": "^0.126.0",
     "@supabase/supabase-js": "^2.116.0",
     "idb": "^8.0.3",
+    "openai": "^7.19.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router-dom": "^7.18.4"
