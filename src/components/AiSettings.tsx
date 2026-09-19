@@ -43,7 +43,7 @@ export function AiSettings() {
       setModels((m) => ({ ...m, [provider]: list }));
       setNotice({ kind: 'ok', text: `${list.length} 件のモデルを取得しました（キーの認証も成功）。` });
     } catch (e) {
-      setNotice({ kind: 'ng', text: describeChatError(e) });
+      setNotice({ kind: 'ng', text: describeChatError(e, provider) });
     } finally {
       setBusy(false);
     }

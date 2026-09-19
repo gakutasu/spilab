@@ -148,12 +148,27 @@ export async function listModels(provider: ChatProvider, apiKey: string): Promis
   return out.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-export function describeChatError(error: unknown): string {
+const BILLING_PAGE: Record<ChatProvider, string> = {
+  anthropic: 'https://console.anthropic.com/settings/billing',
+  openai: 'https://platform.openai.com/settings/organization/billing/',
+};
+
+function isQuotaError(error: unknown): boolean {
+  const e = error as { code?: unknown; message?: unknown; error?: { type?: unknown } };
+  const text = `${String(e?.code ?? '')} ${String(e?.message ?? '')}`.toLowerCase();
+  return /insufficient_quota|no credits|credit balance|billing/.test(text);
+}
+
+export function describeChatError(error: unknown, provider?: ChatProvider): string {
+  if (isQuotaError(error)) {
+    const page = provider ? BILLING_PAGE[provider] : '各サービスの課金ページ';
+    return `API の残高がありません。前払いクレジットを購入してください：${page}`;
+  }
   if (error instanceof Anthropic.AuthenticationError || error instanceof OpenAI.AuthenticationError) return 'APIキーが無効です。設定画面で確認してください。';
   if (error instanceof Anthropic.RateLimitError || error instanceof OpenAI.RateLimitError) return 'レート制限に達しました。少し待ってから再試行してください。';
   if (error instanceof Anthropic.NotFoundError || error instanceof OpenAI.NotFoundError) return 'モデルが見つかりません。設定画面でモデルを選び直してください。';
   if (error instanceof Anthropic.APIConnectionError || error instanceof OpenAI.APIConnectionError) return 'APIに接続できませんでした。ネットワークを確認してください。';
-  if (error instanceof Anthropic.APIError || error instanceof OpenAI.APIError) return `APIエラー（${error.status ?? '?'}）：${error.message}`;
+  if (error instanceof Anthropic.APIError || error instanceof OpenAI.APIError) return `APIエラー${error.status ? `（${error.status}）` : ''}：${error.message}`;
   if (error instanceof DOMException && error.name === 'AbortError') return '中断しました。';
   if (error instanceof Error) return error.message;
   return '不明なエラーが発生しました。';

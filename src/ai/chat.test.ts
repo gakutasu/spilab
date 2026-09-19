@@ -1,5 +1,5 @@
 import type { Question } from '../types';
-import { buildTutorSystemPrompt, PRESET_QUESTIONS, DEFAULT_MODELS } from './chat';
+import { buildTutorSystemPrompt, PRESET_QUESTIONS, DEFAULT_MODELS, describeChatError } from './chat';
 
 const q: Question = {
   id: 'nonverbal-permutation-001',
@@ -37,5 +37,13 @@ describe('presets and models', () => {
     }
     expect(DEFAULT_MODELS.anthropic[0]?.id).toBe('claude-opus-5');
     expect(DEFAULT_MODELS.openai.length).toBeGreaterThan(0);
+  });
+});
+
+describe('describeChatError', () => {
+  it('explains missing credits with the billing page', () => {
+    const e = Object.assign(new Error('You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.'), { code: 'insufficient_quota' });
+    expect(describeChatError(e, 'openai')).toContain('残高');
+    expect(describeChatError(e, 'openai')).toContain('platform.openai.com');
   });
 });
