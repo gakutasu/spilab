@@ -36,7 +36,15 @@ function isRecord(value: unknown): value is AnswerRecord {
 
 function parseSettings(value: unknown): Settings {
   const s = (value && typeof value === 'object' ? value : {}) as Partial<Settings>;
-  return { questionsPerDay: typeof s.questionsPerDay === 'number' ? s.questionsPerDay : DEFAULT_SETTINGS.questionsPerDay };
+  const models = (s.aiModels ?? {}) as Partial<Settings['aiModels']>;
+  return {
+    questionsPerDay: typeof s.questionsPerDay === 'number' ? s.questionsPerDay : DEFAULT_SETTINGS.questionsPerDay,
+    aiProvider: s.aiProvider === 'openai' ? 'openai' : 'anthropic',
+    aiModels: {
+      anthropic: typeof models.anthropic === 'string' ? models.anthropic : DEFAULT_SETTINGS.aiModels.anthropic,
+      openai: typeof models.openai === 'string' ? models.openai : DEFAULT_SETTINGS.aiModels.openai,
+    },
+  };
 }
 
 /** Parses exported JSON. Throws an Error with a user-facing Japanese message on invalid input. */

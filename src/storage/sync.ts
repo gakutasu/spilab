@@ -47,7 +47,8 @@ export function toSettingsRow(userId: string, s: Settings): SettingsRow {
   return { user_id: userId, questions_per_day: s.questionsPerDay };
 }
 
-export function fromSettingsRow(row: Partial<SettingsRow>): Settings {
+/** Only the synced fields; callers merge the result over local settings. */
+export function fromSettingsRow(row: Partial<SettingsRow>): Pick<Settings, 'questionsPerDay'> {
   return { questionsPerDay: typeof row.questions_per_day === 'number' ? row.questions_per_day : DEFAULT_SETTINGS.questionsPerDay };
 }
 
@@ -131,7 +132,7 @@ export async function syncAll(client: SupabaseClient, userId: string): Promise<S
     const settingsRes = await client.from('settings').select('*').eq('user_id', userId).maybeSingle();
     fail('settings pull', settingsRes.error);
     if (settingsRes.data) {
-      await saveSettings(fromSettingsRow(settingsRes.data as SettingsRow));
+      await saveSettings({ ...(await getSettings()), ...fromSettingsRow(settingsRes.data as SettingsRow) });
       settingsApplied = true;
     }
   }

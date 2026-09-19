@@ -69,10 +69,10 @@ dx, dw, dy, dh = ax + aw + 30, bw - aw - 78, ay, ah
 out.append(box(dx, dy, dw, dh, '#fff8e6', '#f5d78a'))
 out.append(text(dx + 16, dy + 30, 'IndexedDB（ブラウザ内DB）', 15, 700))
 out.append(f'<g transform="translate({dx+16},{dy+46})"><ellipse cx="14" cy="6" rx="14" ry="6" fill="#f59e0b"/><path d="M0 6v20c0 3.3 6.3 6 14 6s14-2.7 14-6V6" fill="none" stroke="#f59e0b" stroke-width="2.5"/><path d="M0 16c0 3.3 6.3 6 14 6s14-2.7 14-6" fill="none" stroke="#f59e0b" stroke-width="2.5"/></g>')
-out.append(text(dx + 56, dy + 66, 'answers：回答履歴', 13)); out.append(text(dx + 56, dy + 88, 'settings：設定', 13))
-out.append(text(dx + 16, dy + 130, '履歴はここが正', 12, 400, '#4b5563'))
-out.append(text(dx + 16, dy + 148, 'JSON で書き出し / 読み込み可', 12, 400, '#4b5563'))
-out.append(text(dx + 16, dy + 166, '未ログインならここだけで完結', 12, 400, '#4b5563'))
+out.append(text(dx + 56, dy + 66, 'answers：回答履歴', 13)); out.append(text(dx + 56, dy + 88, 'settings：設定', 13)); out.append(text(dx + 56, dy + 110, 'secrets：AI の API キー', 13))
+out.append(text(dx + 16, dy + 140, '履歴はここが正', 12, 400, '#4b5563'))
+out.append(text(dx + 16, dy + 158, 'JSON で書き出し / 読み込み可', 12, 400, '#4b5563'))
+out.append(text(dx + 16, dy + 176, '未ログインならここだけで完結', 12, 400, '#4b5563'))
 out.append(arrow(ax + aw, ay + ah / 2, dx, ay + ah / 2, both=True))
 mid, px = by - 25, xs[3] + bw1 / 2
 out.append(f'<path d="M{px} {gy+gh} V {mid} H {bx+bw/2}" fill="none" stroke="#4b5563" stroke-width="2"/>')
@@ -80,7 +80,7 @@ out.append(arrow(bx + bw / 2, mid, bx + bw / 2, by))
 out.append(label(bx + bw / 2 + 12, mid - 8, 'HTML / JS / CSS を配信', anchor='start'))
 
 # Supabase
-rx, rw, sy, sh = 820, 320, 300, 190
+rx, rw, sy, sh = 820, 320, 285, 190
 out.append(f'<g filter="url(#shadow)">{box(rx, sy, rw, sh, "#ffffff", "#3FCF8E")}</g>')
 out.append(icon('supabase', rx + 20, sy + 20, 36, '#3FCF8E'))
 out.append(text(rx + 70, sy + 36, 'Supabase（任意）', 16, 700))
@@ -94,7 +94,18 @@ gx, yy = (bx + bw + rx) / 2, sy + sh / 2
 out.append(arrow(bx + bw, yy, rx, yy, dashed=True, both=True))
 out.append(label(gx, yy - 12, 'ログイン時のみ同期')); out.append(label(gx, yy + 24, '回答・設定', 12))
 
-ly = 650
+# AI Q&A (optional)
+qy, qh = 510, 100
+out.append(f'<g filter="url(#shadow)">{box(rx, qy, rw, qh, "#ffffff", "#D97757")}</g>')
+out.append(icon('anthropic', rx + 20, qy + 18, 28, '#191919')); out.append(icon('openai', rx + 56, qy + 18, 28, '#000000'))
+out.append(text(rx + 96, qy + 36, 'Claude / OpenAI API（任意）', 15, 700))
+out.append(text(rx + 20, qy + 64, '採点後の「AIに質問」。利用者自身の API キー', 12, 400, '#4b5563'))
+out.append(text(rx + 20, qy + 84, 'キーはブラウザ内のみ。同期・書き出し対象外', 12, 400, '#4b5563'))
+qyy = qy + qh / 2
+out.append(arrow(bx + bw, qyy, rx, qyy, dashed=True, both=True))
+out.append(label(gx, qyy - 12, 'キー設定時のみ')); out.append(label(gx, qyy + 24, '質問・回答', 12))
+
+ly = 655
 out.append(f'<line x1="40" y1="{ly}" x2="90" y2="{ly}" stroke="#4b5563" stroke-width="2"/>'); out.append(text(100, ly + 5, '必須の経路', 13, 400, '#4b5563'))
 out.append(f'<line x1="200" y1="{ly}" x2="250" y2="{ly}" stroke="#4b5563" stroke-width="2" stroke-dasharray="7 6"/>'); out.append(text(260, ly + 5, '任意（設定した場合のみ）', 13, 400, '#4b5563'))
 out.append(text(40, ly + 34, '解析ツール・独自サーバーなし。ログインしない限り、学習データがブラウザの外に出ることはありません。', 13, 400, '#6b7280'))

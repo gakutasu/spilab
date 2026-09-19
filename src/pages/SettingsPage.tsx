@@ -5,6 +5,7 @@ import { useSync } from '../hooks/useSync';
 import { useIntro } from '../hooks/useIntro';
 import { AUTH_PROVIDERS } from '../storage/supabase';
 import { ProviderIcon } from '../components/ProviderIcon';
+import { AiSettings } from '../components/AiSettings';
 import { formatDateTime } from '../utils/format';
 import { clearAnswers, getAllAnswers, importAnswers } from '../storage/db';
 import { clearSession } from '../storage/sessionStore';
@@ -109,6 +110,8 @@ export function SettingsPage() {
           {sync.error && <p className="notice ng">{sync.error}</p>}
         </section>
       )}
+
+      <AiSettings />
 
       <section className="card">
         <h2>学習データ</h2>

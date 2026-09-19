@@ -1162,3 +1162,89 @@ tbody tr:hover {
   display: block;
   margin-top: 2px;
 }
+
+/* Ask AI */
+.preset-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.btn-preset {
+  min-height: 38px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  border-radius: 999px;
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.chat-msg {
+  padding: 10px 12px;
+  border-radius: 12px;
+  max-width: 100%;
+}
+
+.chat-user {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  max-width: 85%;
+}
+
+.chat-user p {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.chat-assistant {
+  background: var(--bg);
+}
+
+.markdown p {
+  margin: 0 0 0.6em;
+  white-space: pre-line;
+}
+
+.markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown h4 {
+  margin: 0.6em 0 0.3em;
+  font-size: 1rem;
+}
+
+.markdown ul,
+.markdown ol {
+  margin: 0 0 0.6em;
+  padding-left: 1.4em;
+}
+
+.markdown code {
+  background: var(--surface);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.chat-form textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+}
+
+.chat-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
