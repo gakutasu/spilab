@@ -123,7 +123,7 @@ src/questions/
 - 解説が 40 文字以上
 - `recommendedTime` が正の数
 - `category` と `topic` が定義済みで整合
-- 各分野 8 問以上
+- 各分野 6 問以上
 
 ## 5. 学習ロジック
 
