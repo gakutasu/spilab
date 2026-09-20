@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { questions } from '../questions';
 import { CATEGORY_LABEL, topicLabel } from '../questions/topics';
+import type { Category } from '../types';
 import { computeAllQuestionStats, computeOverallStats, computeTopicStats } from '../core/stats';
 import { useAnswers } from '../hooks/useAnswers';
 import { useSettings } from '../hooks/useSettings';
@@ -13,6 +14,7 @@ import { formatPercent, formatSeconds } from '../utils/format';
 export function HistoryPage() {
   const { answers, loading } = useAnswers();
   const { settings } = useSettings();
+  const [tab, setTab] = useState<Category>('nonverbal');
   const insights = useMemo(() => analyzeTopics(questions, answers), [answers]);
   const forecast = useMemo(() => forecastNextSession(questions, answers, settings.questionsPerDay), [answers, settings.questionsPerDay]);
   const trend = useMemo(() => recentTrend(answers), [answers]);
@@ -73,6 +75,9 @@ export function HistoryPage() {
             <span className="stat-value">{overall.studyDays}</span>
           </div>
         </div>
+        <p className="muted small">
+          解いた問題 {overall.answeredQuestionCount} / 総問題数 {overall.questionCount}問
+        </p>
       </section>
 
       <section className="card">
@@ -87,12 +92,25 @@ export function HistoryPage() {
       </section>
 
       <section className="card">
-        <h2>分野別</h2>
+        <div className="card-head">
+          <h2>分野別</h2>
+          <span className="muted small">
+            解いた問題 {overall.answeredQuestionCount} / {overall.questionCount}問
+          </span>
+        </div>
+        <div className="tabs" role="tablist">
+          {(['verbal', 'nonverbal'] as Category[]).map((c) => (
+            <button key={c} type="button" role="tab" aria-selected={tab === c} className={`tab${tab === c ? ' is-active' : ''}`} onClick={() => setTab(c)}>
+              {CATEGORY_LABEL[c]}
+            </button>
+          ))}
+        </div>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>分野</th>
+                <th className="num">問題数</th>
                 <th className="num">回答数</th>
                 <th className="num">正答率</th>
                 <th className="num">わからない率</th>
@@ -102,24 +120,28 @@ export function HistoryPage() {
               </tr>
             </thead>
             <tbody>
-              {topics.map((t) => (
-                <tr key={t.topic}>
-                  <td>
-                    {topicLabel(t.topic)} <span className="muted small">{CATEGORY_LABEL[t.category]}</span>
-                  </td>
-                  <td className="num">{t.attemptCount}</td>
-                  <td className="num">{t.attemptCount ? formatPercent(t.correctRate) : '-'}</td>
-                  <td className="num">{t.attemptCount ? formatPercent(t.unknownRate) : '-'}</td>
-                  <td className="num">{t.attemptCount ? formatSeconds(t.averageAnswerTimeMs, 0) : '-'}</td>
-                  <td className="num">{t.attemptCount ? formatSeconds(t.averageRecommendedTimeMs, 0) : '-'}</td>
-                  <td>
-                    <EvalBadge evaluation={t.evaluation} />
-                  </td>
-                </tr>
-              ))}
+              {topics
+                .filter((t) => t.category === tab)
+                .map((t) => (
+                  <tr key={t.topic}>
+                    <td>{topicLabel(t.topic)}</td>
+                    <td className="num">
+                      {t.answeredQuestionCount} / {t.questionCount}
+                    </td>
+                    <td className="num">{t.attemptCount}</td>
+                    <td className="num">{t.attemptCount ? formatPercent(t.correctRate) : '-'}</td>
+                    <td className="num">{t.attemptCount ? formatPercent(t.unknownRate) : '-'}</td>
+                    <td className="num">{t.attemptCount ? formatSeconds(t.averageAnswerTimeMs, 0) : '-'}</td>
+                    <td className="num">{t.attemptCount ? formatSeconds(t.averageRecommendedTimeMs, 0) : '-'}</td>
+                    <td>
+                      <EvalBadge evaluation={t.evaluation} />
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
+        <p className="muted small">問題数 = 解いた問題 / その分野の問題数</p>
       </section>
 
       <section className="card">

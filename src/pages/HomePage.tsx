@@ -74,7 +74,7 @@ export function HomePage() {
           <h2>学習の記録</h2>
           {!loading && (
             <span className="muted small">
-              通算 {overall.studyDays}日 / {overall.attemptCount}問
+              通算 {overall.studyDays}日・{overall.attemptCount}回答・{overall.answeredQuestionCount}/{overall.questionCount}問
             </span>
           )}
         </div>
