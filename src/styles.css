@@ -1317,3 +1317,15 @@ tbody tr:hover {
   color: var(--primary);
   border-bottom-color: var(--primary);
 }
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.switch-row input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+}

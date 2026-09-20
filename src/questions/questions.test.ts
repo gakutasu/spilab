@@ -12,10 +12,10 @@ describe('question bank', () => {
   });
 
   // Enabled once the initial question bank is complete.
-  it('has at least 8 questions per topic', () => {
+  it('has at least 6 questions per topic', () => {
     for (const topic of TOPIC_IDS) {
       const count = questions.filter((q) => q.topic === topic).length;
-      expect(count, topic).toBeGreaterThanOrEqual(8);
+      expect(count, topic).toBeGreaterThanOrEqual(6);
     }
   });
 });

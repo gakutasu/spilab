@@ -16,7 +16,10 @@ export function HistoryPage() {
   const { settings } = useSettings();
   const [tab, setTab] = useState<Category>('nonverbal');
   const insights = useMemo(() => analyzeTopics(questions, answers), [answers]);
-  const forecast = useMemo(() => forecastNextSession(questions, answers, settings.questionsPerDay), [answers, settings.questionsPerDay]);
+  const forecast = useMemo(
+    () => forecastNextSession(questions, answers, settings.questionsPerDay, new Date(), 100, { formats: settings.formats, includeEnglish: settings.includeEnglish }),
+    [answers, settings],
+  );
   const trend = useMemo(() => recentTrend(answers), [answers]);
 
   const overall = useMemo(() => computeOverallStats(questions, answers), [answers]);
@@ -99,7 +102,7 @@ export function HistoryPage() {
           </span>
         </div>
         <div className="tabs" role="tablist">
-          {(['verbal', 'nonverbal'] as Category[]).map((c) => (
+          {(settings.includeEnglish ? (['verbal', 'nonverbal', 'english'] as Category[]) : (['verbal', 'nonverbal'] as Category[])).map((c) => (
             <button key={c} type="button" role="tab" aria-selected={tab === c} className={`tab${tab === c ? ' is-active' : ''}`} onClick={() => setTab(c)}>
               {CATEGORY_LABEL[c]}
             </button>

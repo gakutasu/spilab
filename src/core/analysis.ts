@@ -62,14 +62,21 @@ export interface Forecast {
 }
 
 /** Simulates the real selection algorithm to estimate what the next session will emphasise. */
-export function forecastNextSession(questions: Question[], records: AnswerRecord[], count: number, now: Date = new Date(), trials = 100): Forecast {
+export function forecastNextSession(
+  questions: Question[],
+  records: AnswerRecord[],
+  count: number,
+  now: Date = new Date(),
+  trials = 100,
+  options: { formats?: Record<'testcenter' | 'paper', boolean>; includeEnglish?: boolean } = {},
+): Forecast {
   const qStats = computeAllQuestionStats(questions, records);
   const topicStats = computeTopicStats(questions, records);
   const topicCounts = new Map<TopicId, number>();
   const buckets: Record<Evaluation, number> = { weak: 0, normal: 0, unrated: 0, strong: 0 };
   let total = 0;
   for (let seed = 0; seed < trials; seed++) {
-    const picked = selectQuestions({ questions, records, count, now, rng: mulberry32(seed + 1) });
+    const picked = selectQuestions({ questions, records, count, now, rng: mulberry32(seed + 1), formats: options.formats, includeEnglish: options.includeEnglish });
     for (const q of picked) {
       topicCounts.set(q.topic, (topicCounts.get(q.topic) ?? 0) + 1);
       buckets[bucketOf(qStats.get(q.id)!, topicStats.get(q.topic)!.evaluation)] += 1;

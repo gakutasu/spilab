@@ -78,7 +78,7 @@ export const wordMeaningQuestions: Question[] = [
   {
     id: 'verbal-word-meaning-004',
     category: 'verbal',
-    topic: 'word_meaning',
+    topic: 'word_usage',
     subtopic: 'usage',
     difficulty: 2,
     question: '次の文の「かかる」と最も近い意味で使われているものを選びなさい。\n\n「この仕事は手間がかかる」',
@@ -226,7 +226,7 @@ export const wordMeaningQuestions: Question[] = [
   {
     id: 'verbal-word-meaning-010',
     category: 'verbal',
-    topic: 'word_meaning',
+    topic: 'word_usage',
     subtopic: 'usage',
     difficulty: 1,
     question: '次の文の「あまい」と最も近い意味で使われているものを選びなさい。\n\n「彼は子どもに対してあまい」',

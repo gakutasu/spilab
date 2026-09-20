@@ -1,6 +1,6 @@
 import type { TopicId } from './questions/topics';
 
-export type Category = 'verbal' | 'nonverbal';
+export type Category = 'verbal' | 'nonverbal' | 'english';
 export type AnswerResult = 'correct' | 'incorrect' | 'unknown';
 export type Evaluation = 'strong' | 'normal' | 'weak' | 'unrated';
 export type ChoiceIndex = 0 | 1 | 2 | 3;
@@ -38,6 +38,10 @@ export type AiProvider = 'anthropic' | 'openai';
 
 export interface Settings {
   questionsPerDay: number;
+  /** Delivery formats to practise for; topics outside them are not asked. */
+  formats: { testcenter: boolean; paper: boolean };
+  /** Whether the optional English section is included. */
+  includeEnglish: boolean;
   /** Provider used by the "ask AI" panel after answering. */
   aiProvider: AiProvider;
   /** Selected model id per provider. */
@@ -46,6 +50,8 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   questionsPerDay: 7,
+  formats: { testcenter: true, paper: false },
+  includeEnglish: false,
   aiProvider: 'anthropic',
   aiModels: { anthropic: 'claude-opus-5', openai: 'gpt-5.4' },
 };

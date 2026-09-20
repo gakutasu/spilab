@@ -73,7 +73,15 @@ export function SessionPage() {
       setSession(existing);
       return;
     }
-    const picked = selectQuestions({ questions, records: answers, count: settings.questionsPerDay, now: new Date(), rng: randomRng });
+    const picked = selectQuestions({
+      questions,
+      records: answers,
+      count: settings.questionsPerDay,
+      now: new Date(),
+      rng: randomRng,
+      formats: settings.formats,
+      includeEnglish: settings.includeEnglish,
+    });
     if (picked.length === 0) {
       setError('出題できる問題がありません。');
       return;
@@ -81,7 +89,7 @@ export function SessionPage() {
     const fresh = createSession(picked.map((q) => q.id), todayKey());
     saveSession(fresh);
     setSession(fresh);
-  }, [loading, settingsLoading, answers, settings.questionsPerDay, navigate]);
+  }, [loading, settingsLoading, answers, settings, navigate]);
 
   const questionId = session ? currentQuestionId(session) : null;
   const question = questionId ? getQuestion(questionId) : undefined;
