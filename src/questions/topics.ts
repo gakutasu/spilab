@@ -79,12 +79,12 @@ export const TOPICS: Record<TopicId, TopicInfo> = {
   data_reading: { category: 'nonverbal', label: '資料読み取り', formats: BOTH },
   flow_ratio: { category: 'nonverbal', label: '物の流れと比率', formats: PAPER },
   graph_region: { category: 'nonverbal', label: 'グラフの領域', formats: PAPER },
-  eng_synonym: { category: 'english', label: '英語：同意語・反意語', formats: BOTH },
-  eng_fill_blank: { category: 'english', label: '英語：空欄補充', formats: BOTH },
-  eng_dictionary: { category: 'english', label: '英語：英英辞典', formats: BOTH },
-  eng_error: { category: 'english', label: '英語：誤文訂正', formats: BOTH },
-  eng_translation: { category: 'english', label: '英語：和文英訳', formats: BOTH },
-  eng_reading: { category: 'english', label: '英語：長文読解', formats: BOTH },
+  eng_synonym: { category: 'english', label: '同意語・反意語', formats: BOTH },
+  eng_fill_blank: { category: 'english', label: '空欄補充（英）', formats: BOTH },
+  eng_dictionary: { category: 'english', label: '英英辞典', formats: BOTH },
+  eng_error: { category: 'english', label: '誤文訂正', formats: BOTH },
+  eng_translation: { category: 'english', label: '和文英訳', formats: BOTH },
+  eng_reading: { category: 'english', label: '長文読解（英）', formats: BOTH },
 };
 
 export const TOPIC_IDS = Object.keys(TOPICS) as TopicId[];
