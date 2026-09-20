@@ -38,10 +38,16 @@ describe('categorySplit', () => {
     expect([a.verbal, a.nonverbal].sort()).toEqual([3, 4]);
     expect([b.verbal, b.nonverbal].sort()).toEqual([3, 4]);
     expect(a.verbal).not.toBe(b.verbal);
+    expect(a.english).toBe(0);
   });
 
   it('splits even counts evenly', () => {
-    expect(categorySplit(10, () => 0.5)).toEqual({ verbal: 5, nonverbal: 5 });
+    expect(categorySplit(10, () => 0.5)).toEqual({ verbal: 5, nonverbal: 5, english: 0 });
+  });
+
+  it('reserves about a sixth for English when enabled', () => {
+    expect(categorySplit(7, () => 0.5, true)).toEqual({ verbal: 3, nonverbal: 3, english: 1 });
+    expect(categorySplit(15, () => 0.5, true).english).toBe(3);
   });
 });
 
@@ -153,6 +159,20 @@ describe('selectQuestions', () => {
       expect(topics).toContain('vocabulary');
       expect(topics).toContain('profit_loss');
     }
+  });
+
+  it('excludes paper-only and English topics unless enabled', () => {
+    const paperQ = [1, 2].map((i) => makeQuestion(`fr${i}`, 'flow_ratio', 'nonverbal'));
+    const engQ = [1, 2].map((i) => makeQuestion(`en${i}`, 'eng_synonym', 'english'));
+    const bank = [...verbal, ...perm, ...paperQ, ...engQ];
+    const base = { questions: bank, records: [], count: 8, now: NOW };
+    const tcOnly = selectQuestions({ ...base, rng: mulberry32(1) }).map((q) => q.topic);
+    expect(tcOnly).not.toContain('flow_ratio');
+    expect(tcOnly).not.toContain('eng_synonym');
+    const withPaper = selectQuestions({ ...base, rng: mulberry32(1), formats: { testcenter: true, paper: true } }).map((q) => q.topic);
+    expect(withPaper).toContain('flow_ratio');
+    const withEnglish = selectQuestions({ ...base, rng: mulberry32(1), includeEnglish: true }).map((q) => q.topic);
+    expect(withEnglish).toContain('eng_synonym');
   });
 
   it('is deterministic for a given seed', () => {

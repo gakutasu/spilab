@@ -87,7 +87,7 @@ const SETTINGS_KEY = 'settings';
 
 export async function getSettings(): Promise<Settings> {
   const stored = (await (await db()).get('settings', SETTINGS_KEY)) as Partial<Settings> | undefined;
-  return { ...DEFAULT_SETTINGS, ...stored, aiModels: { ...DEFAULT_SETTINGS.aiModels, ...stored?.aiModels } };
+  return { ...DEFAULT_SETTINGS, ...stored, formats: { ...DEFAULT_SETTINGS.formats, ...stored?.formats }, aiModels: { ...DEFAULT_SETTINGS.aiModels, ...stored?.aiModels } };
 }
 
 export type SecretKey = 'anthropicApiKey' | 'openaiApiKey';

@@ -1,5 +1,5 @@
 import type { AnswerRecord, Category, Evaluation, Question } from '../types';
-import type { TopicId } from '../questions/topics';
+import { TOPICS, type TestFormat, type TopicId } from '../questions/topics';
 import { computeAllQuestionStats, computeTopicStats, type QuestionStats } from './stats';
 import { timeBand, timeRatio } from './timeRatio';
 import { shuffle, weightedIndex, type Rng } from './rng';
@@ -22,12 +22,28 @@ export interface SelectionInput {
   count: number;
   now: Date;
   rng: Rng;
+  /** Delivery formats being practised; defaults to test center only. */
+  formats?: Record<TestFormat, boolean>;
+  /** Include the optional English section. */
+  includeEnglish?: boolean;
 }
 
-export function categorySplit(count: number, rng: Rng): Record<Category, number> {
-  const small = Math.floor(count / 2);
-  const large = count - small;
-  return rng() < 0.5 ? { verbal: small, nonverbal: large } : { verbal: large, nonverbal: small };
+/** English gets roughly one sixth of the set (at least one when enabled); the rest splits between verbal and nonverbal. */
+export function categorySplit(count: number, rng: Rng, includeEnglish = false): Record<Category, number> {
+  const english = includeEnglish && count > 0 ? Math.max(1, Math.round(count / 6)) : 0;
+  const rest = count - english;
+  const small = Math.floor(rest / 2);
+  const large = rest - small;
+  return rng() < 0.5 ? { verbal: small, nonverbal: large, english } : { verbal: large, nonverbal: small, english };
+}
+
+/** Questions whose topic belongs to an enabled format (and category). */
+export function filterPool(questions: Question[], formats: Record<TestFormat, boolean>, includeEnglish: boolean): Question[] {
+  const enabled = (Object.keys(formats) as TestFormat[]).filter((f) => formats[f]);
+  return questions.filter((q) => {
+    if (q.category === 'english' && !includeEnglish) return false;
+    return TOPICS[q.topic].formats.some((f) => enabled.includes(f));
+  });
 }
 
 export function isInCooldown(stats: QuestionStats, now: Date): boolean {
@@ -134,7 +150,10 @@ function spreadTopics(items: Question[]): Question[] {
   return arr;
 }
 
-export function selectQuestions({ questions, records, count, now, rng }: SelectionInput): Question[] {
+export function selectQuestions(input: SelectionInput): Question[] {
+  const { records, count, now, rng } = input;
+  const includeEnglish = input.includeEnglish ?? false;
+  const questions = filterPool(input.questions, input.formats ?? { testcenter: true, paper: false }, includeEnglish);
   const qStats = computeAllQuestionStats(questions, records);
   const topicStats = computeTopicStats(questions, records);
   const topicEval = new Map<TopicId, Evaluation>();
@@ -144,25 +163,23 @@ export function selectQuestions({ questions, records, count, now, rng }: Selecti
     if (s.attemptCount === 0 && questions.some((q) => q.topic === topic)) untouchedTopics.add(topic);
   }
 
-  const available: Record<Category, number> = {
-    verbal: questions.filter((q) => q.category === 'verbal').length,
-    nonverbal: questions.filter((q) => q.category === 'nonverbal').length,
-  };
-  const split = categorySplit(count, rng);
-  // Shift quota to the other category when one side is short of questions.
-  let verbalNeed = Math.min(split.verbal, available.verbal);
-  let nonverbalNeed = Math.min(split.nonverbal, available.nonverbal);
-  const leftover = count - verbalNeed - nonverbalNeed;
-  if (leftover > 0) {
-    const extraVerbal = Math.min(leftover, available.verbal - verbalNeed);
-    verbalNeed += extraVerbal;
-    nonverbalNeed += Math.min(leftover - extraVerbal, available.nonverbal - nonverbalNeed);
+  const categories: Category[] = ['verbal', 'nonverbal', 'english'];
+  const available: Record<Category, number> = { verbal: 0, nonverbal: 0, english: 0 };
+  for (const q of questions) available[q.category] += 1;
+  const split = categorySplit(count, rng, includeEnglish);
+  // Cap each quota by availability, then hand leftovers to categories that still have questions.
+  const need: Record<Category, number> = { verbal: 0, nonverbal: 0, english: 0 };
+  for (const c of categories) need[c] = Math.min(split[c], available[c]);
+  let leftover = count - need.verbal - need.nonverbal - need.english;
+  for (const c of ['verbal', 'nonverbal', 'english'] as Category[]) {
+    if (leftover <= 0) break;
+    if (c === 'english' && !includeEnglish) continue;
+    const extra = Math.min(leftover, available[c] - need[c]);
+    need[c] += extra;
+    leftover -= extra;
   }
 
   const pickedTopics = new Set<TopicId>();
-  const picked = [
-    ...selectForCategory('verbal', verbalNeed, questions, qStats, topicEval, untouchedTopics, now, rng, pickedTopics),
-    ...selectForCategory('nonverbal', nonverbalNeed, questions, qStats, topicEval, untouchedTopics, now, rng, pickedTopics),
-  ];
+  const picked = categories.flatMap((c) => selectForCategory(c, need[c], questions, qStats, topicEval, untouchedTopics, now, rng, pickedTopics));
   return spreadTopics(shuffle(picked, rng));
 }

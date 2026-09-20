@@ -37,8 +37,14 @@ function isRecord(value: unknown): value is AnswerRecord {
 function parseSettings(value: unknown): Settings {
   const s = (value && typeof value === 'object' ? value : {}) as Partial<Settings>;
   const models = (s.aiModels ?? {}) as Partial<Settings['aiModels']>;
+  const formats = (s.formats ?? {}) as Partial<Settings['formats']>;
   return {
     questionsPerDay: typeof s.questionsPerDay === 'number' ? s.questionsPerDay : DEFAULT_SETTINGS.questionsPerDay,
+    formats: {
+      testcenter: typeof formats.testcenter === 'boolean' ? formats.testcenter : DEFAULT_SETTINGS.formats.testcenter,
+      paper: typeof formats.paper === 'boolean' ? formats.paper : DEFAULT_SETTINGS.formats.paper,
+    },
+    includeEnglish: typeof s.includeEnglish === 'boolean' ? s.includeEnglish : DEFAULT_SETTINGS.includeEnglish,
     aiProvider: s.aiProvider === 'openai' ? 'openai' : 'anthropic',
     aiModels: {
       anthropic: typeof models.anthropic === 'string' ? models.anthropic : DEFAULT_SETTINGS.aiModels.anthropic,

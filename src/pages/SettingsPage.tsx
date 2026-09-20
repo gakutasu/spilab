@@ -72,7 +72,30 @@ export function SettingsPage() {
             ))}
           </select>
         </label>
-        <p className="muted small">次に「今日のSPIを始める」を押したときから反映されます。</p>
+        <div className="field">
+          <span>受検形式（出題する分野の範囲）</span>
+          <label className="switch-row">
+            <input
+              type="checkbox"
+              checked={settings.formats.testcenter}
+              onChange={(e) => void update({ ...settings, formats: { ...settings.formats, testcenter: e.target.checked } })}
+            />
+            <span>テストセンター / WEBテスティング</span>
+          </label>
+          <label className="switch-row">
+            <input
+              type="checkbox"
+              checked={settings.formats.paper}
+              onChange={(e) => void update({ ...settings, formats: { ...settings.formats, paper: e.target.checked } })}
+            />
+            <span>ペーパーテスト（物の流れと比率・グラフの領域などを追加）</span>
+          </label>
+          <label className="switch-row">
+            <input type="checkbox" checked={settings.includeEnglish} onChange={(e) => void update({ ...settings, includeEnglish: e.target.checked })} />
+            <span>英語（ENG）を含める</span>
+          </label>
+        </div>
+        <p className="muted small">次に「今日のSPIを始める」を押したときから反映されます。両方の形式をオフにすると出題できません。</p>
       </section>
 
       {sync.configured && (

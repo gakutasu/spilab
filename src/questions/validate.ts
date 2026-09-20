@@ -20,8 +20,8 @@ export function validateQuestions(questions: Question[]): string[] {
     }
     seen.add(q.id);
 
-    if (q.category !== 'verbal' && q.category !== 'nonverbal') {
-      errors.push(`${tag} category must be verbal or nonverbal`);
+    if (q.category !== 'verbal' && q.category !== 'nonverbal' && q.category !== 'english') {
+      errors.push(`${tag} category must be verbal, nonverbal or english`);
     }
     if (!isTopicId(q.topic)) {
       errors.push(`${tag} unknown topic "${q.topic}"`);
