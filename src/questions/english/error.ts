@@ -55,17 +55,17 @@ A の「is married」は結婚している状態を表す形で正しく、C の
     topic: 'eng_error',
     subtopic: 'article',
     difficulty: 1,
-    question: `${INSTRUCTION}\n\nI need [A: an] [B: advice] [C: from] someone who [D: knows] the law.`,
-    choices: ['an', 'advice', 'from', 'knows'],
+    question: `${INSTRUCTION}\n\nI need [A: an advice] [B: from] someone [C: who] [D: knows] the law.`,
+    choices: ['an advice', 'from', 'who', 'knows'],
     correctChoice: 0,
     recommendedTime: 40,
     explanation: `## 解き方
 
 冠詞と名詞の可算・不可算に関する問題です。「advice（助言）」は不可算名詞なので不定冠詞「an」を付けられません。A が誤りで、「I need (some) advice」が正しい形です。数えたいときは「a piece of advice」と言います。
 
-B の「advice」自体は正しく、C の「from」は助言の出所を表す前置詞として適切です。D の「knows」は先行詞 someone に一致した三人称単数の形です。
+B の「from」は助言の出所を表す前置詞として適切です。C の「who」は先行詞 someone を受ける主格の関係代名詞、D の「knows」は先行詞 someone に一致した三人称単数の形で、いずれも正しい形です。
 
-答え：an
+答え：an advice
 
 ## ポイント
 
