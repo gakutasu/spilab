@@ -142,6 +142,19 @@ describe('selectQuestions', () => {
     expect(distinctTotal / 100).toBeGreaterThan(6.3);
   });
 
+  it('draws from topics that were never attempted before anything else', () => {
+    // verbal: word_relation attempted, vocabulary untouched; nonverbal: permutation attempted, profit_loss untouched
+    const vocab = [1, 2, 3].map((i) => makeQuestion(`vo${i}`, 'vocabulary', 'verbal'));
+    const bank = [...verbal, ...vocab, ...perm, ...profit];
+    const records = [rec('v1', daysAgo(10), 'correct'), rec('p1', daysAgo(10), 'unknown')];
+    for (let seed = 0; seed < 30; seed++) {
+      const picked = selectQuestions({ questions: bank, records, count: 2, now: NOW, rng: mulberry32(seed) });
+      const topics = picked.map((q) => q.topic);
+      expect(topics).toContain('vocabulary');
+      expect(topics).toContain('profit_loss');
+    }
+  });
+
   it('is deterministic for a given seed', () => {
     const a = selectQuestions({ questions: all, records: [], count: 5, now: NOW, rng: mulberry32(42) });
     const b = selectQuestions({ questions: all, records: [], count: 5, now: NOW, rng: mulberry32(42) });

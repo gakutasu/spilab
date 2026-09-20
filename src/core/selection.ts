@@ -89,6 +89,7 @@ function selectForCategory(
   questions: Question[],
   qStats: Map<string, QuestionStats>,
   topicEval: Map<TopicId, Evaluation>,
+  untouchedTopics: Set<TopicId>,
   now: Date,
   rng: Rng,
   pickedTopics: Set<TopicId>,
@@ -101,7 +102,21 @@ function selectForCategory(
     });
   const fresh = pool.filter((c) => !isInCooldown(c.stats, now));
   const candidates = fresh.length >= need ? fresh : pool;
-  return drawFromBuckets(candidates, need, rng, pickedTopics);
+
+  // Topics never attempted come first: one question per untouched topic, in random order.
+  const untouched = shuffle([...new Set(candidates.filter((c) => untouchedTopics.has(c.question.topic)).map((c) => c.question.topic))], rng);
+  const picked: Question[] = [];
+  const used = new Set<string>();
+  for (const topic of untouched) {
+    if (picked.length >= need) break;
+    const options = candidates.filter((c) => c.question.topic === topic);
+    const chosen = options[Math.floor(rng() * options.length)]!.question;
+    picked.push(chosen);
+    used.add(chosen.id);
+    pickedTopics.add(topic);
+  }
+  const rest = candidates.filter((c) => !used.has(c.question.id));
+  return [...picked, ...drawFromBuckets(rest, need - picked.length, rng, pickedTopics)];
 }
 
 /** Reorders so that adjacent questions rarely share a topic. Single pass, best effort. */
@@ -123,7 +138,11 @@ export function selectQuestions({ questions, records, count, now, rng }: Selecti
   const qStats = computeAllQuestionStats(questions, records);
   const topicStats = computeTopicStats(questions, records);
   const topicEval = new Map<TopicId, Evaluation>();
-  for (const [topic, s] of topicStats) topicEval.set(topic, s.evaluation);
+  const untouchedTopics = new Set<TopicId>();
+  for (const [topic, s] of topicStats) {
+    topicEval.set(topic, s.evaluation);
+    if (s.attemptCount === 0 && questions.some((q) => q.topic === topic)) untouchedTopics.add(topic);
+  }
 
   const available: Record<Category, number> = {
     verbal: questions.filter((q) => q.category === 'verbal').length,
@@ -142,8 +161,8 @@ export function selectQuestions({ questions, records, count, now, rng }: Selecti
 
   const pickedTopics = new Set<TopicId>();
   const picked = [
-    ...selectForCategory('verbal', verbalNeed, questions, qStats, topicEval, now, rng, pickedTopics),
-    ...selectForCategory('nonverbal', nonverbalNeed, questions, qStats, topicEval, now, rng, pickedTopics),
+    ...selectForCategory('verbal', verbalNeed, questions, qStats, topicEval, untouchedTopics, now, rng, pickedTopics),
+    ...selectForCategory('nonverbal', nonverbalNeed, questions, qStats, topicEval, untouchedTopics, now, rng, pickedTopics),
   ];
   return spreadTopics(shuffle(picked, rng));
 }

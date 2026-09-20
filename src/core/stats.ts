@@ -35,9 +35,15 @@ export interface TopicStats {
   averageRecommendedTimeMs: number;
   score: number;
   evaluation: Evaluation;
+  /** Number of questions in the bank for this topic. */
+  questionCount: number;
+  /** Distinct questions answered at least once. */
+  answeredQuestionCount: number;
 }
 
 export interface OverallStats {
+  questionCount: number;
+  answeredQuestionCount: number;
   attemptCount: number;
   correctCount: number;
   incorrectCount: number;
@@ -168,6 +174,8 @@ export function computeTopicStats(questions: Question[], records: AnswerRecord[]
     result.set(topic, {
       topic,
       category: TOPICS[topic].category,
+      questionCount: questions.filter((q) => q.topic === topic).length,
+      answeredQuestionCount: new Set(items.map((i) => i.question.id)).size,
       attemptCount: c.attemptCount,
       correctCount: c.correctCount,
       incorrectCount: c.incorrectCount,
@@ -189,6 +197,8 @@ export function computeOverallStats(questions: Question[], records: AnswerRecord
   const c = countResults(own);
   const days = new Set(own.map((r) => localDateKey(r.timestamp)));
   return {
+    questionCount: questions.length,
+    answeredQuestionCount: new Set(own.map((r) => r.questionId)).size,
     attemptCount: c.attemptCount,
     correctCount: c.correctCount,
     incorrectCount: c.incorrectCount,

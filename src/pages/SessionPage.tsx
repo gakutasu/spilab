@@ -168,6 +168,11 @@ export function SessionPage() {
       <div className="session-header">
         <span className="progress">
           問題 {session.currentIndex + 1} / {session.questionIds.length}
+          {session.phase === 'answering' && (
+            <span className="timer-inline" aria-live="off">
+              {formatClock(elapsed)}
+            </span>
+          )}
         </span>
         <span className="topic-badge">【{topicLabel(question.topic)}】</span>
       </div>
@@ -189,9 +194,6 @@ export function SessionPage() {
 
       {session.phase === 'answering' && (
         <>
-          <div className="timer" aria-live="off">
-            経過時間 <span className="timer-value">{formatClock(elapsed)}</span>
-          </div>
           <ChoiceList
             question={question}
             selected={session.selectedChoice}

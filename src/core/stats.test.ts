@@ -126,6 +126,8 @@ describe('computeTopicStats', () => {
     expect(p.averageRecommendedTimeMs).toBe(45000);
     expect(p.score).toBe(48); // 50 + 8 - 10
     expect(p.evaluation).toBe('unrated');
+    expect(p.questionCount).toBe(2);
+    expect(p.answeredQuestionCount).toBe(2);
     // topics with no records are still present
     expect(map.get('probability')!.attemptCount).toBe(0);
     expect(map.get('probability')!.evaluation).toBe('unrated');
@@ -161,6 +163,8 @@ describe('computeOverallStats', () => {
 
   it('returns zeros with no records', () => {
     expect(computeOverallStats(questions, [])).toEqual({
+      questionCount: 3,
+      answeredQuestionCount: 0,
       attemptCount: 0,
       correctCount: 0,
       incorrectCount: 0,
