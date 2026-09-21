@@ -175,6 +175,21 @@ describe('selectQuestions', () => {
     expect(withEnglish).toContain('eng_synonym');
   });
 
+  it('restricts to a category or a topic when scoped', () => {
+    const engQ = [1, 2, 3].map((i) => makeQuestion(`en${i}`, 'eng_synonym', 'english'));
+    const bank = [...verbal, ...perm, ...profit, ...engQ];
+    const base = { questions: bank, records: [], count: 5, now: NOW };
+    const cat = selectQuestions({ ...base, rng: mulberry32(2), scope: { kind: 'category', category: 'nonverbal' } });
+    expect(cat).toHaveLength(5);
+    expect(cat.every((q) => q.category === 'nonverbal')).toBe(true);
+    const topic = selectQuestions({ ...base, rng: mulberry32(2), scope: { kind: 'topic', topic: 'permutation' } });
+    expect(topic).toHaveLength(4);
+    expect(topic.every((q) => q.topic === 'permutation')).toBe(true);
+    // English scope works even when the English toggle is off
+    const eng = selectQuestions({ ...base, rng: mulberry32(2), scope: { kind: 'category', category: 'english' }, includeEnglish: false });
+    expect(eng).toHaveLength(3);
+  });
+
   it('is deterministic for a given seed', () => {
     const a = selectQuestions({ questions: all, records: [], count: 5, now: NOW, rng: mulberry32(42) });
     const b = selectQuestions({ questions: all, records: [], count: 5, now: NOW, rng: mulberry32(42) });

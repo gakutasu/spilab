@@ -8,6 +8,7 @@ import { SummaryPage } from './pages/SummaryPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { QuestionDetailPage } from './pages/QuestionDetailPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { PracticePage } from './pages/PracticePage';
 
 export function App() {
   return (
@@ -22,6 +23,7 @@ export function App() {
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/history/:questionId" element={<QuestionDetailPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/practice" element={<PracticePage />} />
         </Route>
       </Routes>
         </IntroProvider>

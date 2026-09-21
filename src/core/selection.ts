@@ -1,4 +1,4 @@
-import type { AnswerRecord, Category, Evaluation, Question } from '../types';
+import type { AnswerRecord, Category, Evaluation, Question, SessionScope } from '../types';
 import { TOPICS, type TestFormat, type TopicId } from '../questions/topics';
 import { computeAllQuestionStats, computeTopicStats, type QuestionStats } from './stats';
 import { timeBand, timeRatio } from './timeRatio';
@@ -26,6 +26,14 @@ export interface SelectionInput {
   formats?: Record<TestFormat, boolean>;
   /** Include the optional English section. */
   includeEnglish?: boolean;
+  /** Restrict to a category or a single topic. Defaults to everything enabled. */
+  scope?: SessionScope;
+}
+
+export function applyScope(questions: Question[], scope: SessionScope | undefined): Question[] {
+  if (!scope || scope.kind === 'all') return questions;
+  if (scope.kind === 'category') return questions.filter((q) => q.category === scope.category);
+  return questions.filter((q) => q.topic === scope.topic);
 }
 
 /** English gets roughly one sixth of the set (at least one when enabled); the rest splits between verbal and nonverbal. */
@@ -35,6 +43,13 @@ export function categorySplit(count: number, rng: Rng, includeEnglish = false): 
   const small = Math.floor(rest / 2);
   const large = rest - small;
   return rng() < 0.5 ? { verbal: small, nonverbal: large, english } : { verbal: large, nonverbal: small, english };
+}
+
+/** When scoped to one category/topic only that category has questions; give it the whole count. */
+function scopedSplit(count: number, available: Record<Category, number>): Record<Category, number> {
+  const out: Record<Category, number> = { verbal: 0, nonverbal: 0, english: 0 };
+  for (const c of Object.keys(available) as Category[]) if (available[c] > 0) out[c] = count;
+  return out;
 }
 
 /** Questions whose topic belongs to an enabled format (and category). */
@@ -152,8 +167,10 @@ function spreadTopics(items: Question[]): Question[] {
 
 export function selectQuestions(input: SelectionInput): Question[] {
   const { records, count, now, rng } = input;
-  const includeEnglish = input.includeEnglish ?? false;
-  const questions = filterPool(input.questions, input.formats ?? { testcenter: true, paper: false }, includeEnglish);
+  const scope = input.scope;
+  // A scoped session ignores the English toggle for that scope (the learner asked for it explicitly).
+  const includeEnglish = (input.includeEnglish ?? false) || (scope?.kind === 'category' && scope.category === 'english') || (scope?.kind === 'topic' && TOPICS[scope.topic].category === 'english');
+  const questions = applyScope(filterPool(input.questions, scope && scope.kind !== 'all' ? { testcenter: true, paper: true } : (input.formats ?? { testcenter: true, paper: false }), includeEnglish), scope);
   const qStats = computeAllQuestionStats(questions, records);
   const topicStats = computeTopicStats(questions, records);
   const topicEval = new Map<TopicId, Evaluation>();
@@ -166,7 +183,7 @@ export function selectQuestions(input: SelectionInput): Question[] {
   const categories: Category[] = ['verbal', 'nonverbal', 'english'];
   const available: Record<Category, number> = { verbal: 0, nonverbal: 0, english: 0 };
   for (const q of questions) available[q.category] += 1;
-  const split = categorySplit(count, rng, includeEnglish);
+  const split = scope && scope.kind !== 'all' ? scopedSplit(count, available) : categorySplit(count, rng, includeEnglish);
   // Cap each quota by availability, then hand leftovers to categories that still have questions.
   const need: Record<Category, number> = { verbal: 0, nonverbal: 0, english: 0 };
   for (const c of categories) need[c] = Math.min(split[c], available[c]);

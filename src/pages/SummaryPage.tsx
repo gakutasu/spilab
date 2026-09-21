@@ -8,6 +8,7 @@ import { isComplete } from '../core/session';
 import { useAnswers } from '../hooks/useAnswers';
 import { clearSession, loadSession } from '../storage/sessionStore';
 import { formatSeconds } from '../utils/format';
+import { describeScope } from '../core/scope';
 
 const GROUPS: Array<{ key: Evaluation; title: string }> = [
   { key: 'strong', title: '得意' },
@@ -62,6 +63,7 @@ export function SummaryPage() {
   return (
     <div className="page summary">
       <h1>今日の結果</h1>
+      {session.scope && session.scope.kind !== 'all' && <p className="muted small">出題範囲：{describeScope(session.scope)}</p>}
       <section className="card">
         <p className="summary-headline">
           {results.length}問中{correct}問正解
@@ -105,6 +107,9 @@ export function SummaryPage() {
         <button type="button" className="btn btn-primary btn-lg" onClick={finish}>
           ホームへ戻る
         </button>
+        <Link to="/practice" className="btn btn-secondary">
+          別の分野を練習する
+        </Link>
         <Link to="/history" className="btn btn-link">
           学習履歴を見る
         </Link>
