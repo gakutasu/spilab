@@ -24,6 +24,8 @@ export function App() {
         <Route path="/history/:questionId" element={<QuestionDetailPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/practice" element={<PracticePage />} />
+        <Route path="/practice/session" element={<SessionPage slot="practice" />} />
+        <Route path="/practice/summary" element={<SummaryPage slot="practice" />} />
         </Route>
       </Routes>
         </IntroProvider>
