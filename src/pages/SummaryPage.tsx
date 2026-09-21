@@ -6,7 +6,7 @@ import { topicLabel, type TopicId } from '../questions/topics';
 import { computeTopicStats } from '../core/stats';
 import { isComplete } from '../core/session';
 import { useAnswers } from '../hooks/useAnswers';
-import { clearSession, loadSession } from '../storage/sessionStore';
+import { clearSession, loadSession, type SessionSlot } from '../storage/sessionStore';
 import { formatSeconds } from '../utils/format';
 import { describeScope } from '../core/scope';
 
@@ -17,10 +17,10 @@ const GROUPS: Array<{ key: Evaluation; title: string }> = [
   { key: 'unrated', title: '未評価' },
 ];
 
-export function SummaryPage() {
+export function SummaryPage({ slot = 'daily' }: { slot?: SessionSlot }) {
   const navigate = useNavigate();
   const { answers, loading } = useAnswers();
-  const session = loadSession();
+  const session = loadSession(slot);
 
   const topicGroups = useMemo(() => {
     if (!session) return new Map<Evaluation, TopicId[]>();
@@ -56,13 +56,13 @@ export function SummaryPage() {
   const avgMs = results.reduce((s, r) => s + r.answerTimeMs, 0) / results.length;
 
   const finish = () => {
-    clearSession();
+    clearSession(slot);
     navigate('/');
   };
 
   return (
     <div className="page summary">
-      <h1>今日の結果</h1>
+      <h1>{slot === 'practice' ? '練習の結果' : '今日の結果'}</h1>
       {session.scope && session.scope.kind !== 'all' && <p className="muted small">出題範囲：{describeScope(session.scope)}</p>}
       <section className="card">
         <p className="summary-headline">
@@ -107,7 +107,7 @@ export function SummaryPage() {
         <button type="button" className="btn btn-primary btn-lg" onClick={finish}>
           ホームへ戻る
         </button>
-        <Link to="/practice" className="btn btn-secondary">
+        <Link to="/practice" className="btn btn-secondary" onClick={() => clearSession(slot)}>
           別の分野を練習する
         </Link>
         <Link to="/history" className="btn btn-link">

@@ -14,7 +14,7 @@ import { useSettings } from '../hooks/useSettings';
 import { useElapsed } from '../hooks/useElapsed';
 import { useSync } from '../hooks/useSync';
 import { addAnswer } from '../storage/db';
-import { clearSession, loadSession, saveSession, type ActiveSession, type SessionResult } from '../storage/sessionStore';
+import { clearSession, loadSession, saveSession, type ActiveSession, type SessionResult, type SessionSlot } from '../storage/sessionStore';
 import { ChoiceList } from '../components/ChoiceList';
 import { QuestionBody } from '../components/QuestionBody';
 import { Explanation } from '../components/Explanation';
@@ -43,6 +43,21 @@ function feedbackFor(
   });
 }
 
+const RELOAD_FLAG = 'spilab.practiceReloadUsed';
+
+/** True once per document load when the document was opened via reload. */
+function consumeReloadOnce(): boolean {
+  try {
+    const entries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+    const reloaded = entries.some((e) => e.type === 'reload');
+    if (!reloaded || sessionStorage.getItem(RELOAD_FLAG)) return false;
+    sessionStorage.setItem(RELOAD_FLAG, '1');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Drops the most recent record for the question so "before" stats can be rebuilt after a reload. */
 function withoutLatest(records: AnswerRecord[], questionId: string): AnswerRecord[] {
   let latestIndex = -1;
@@ -52,10 +67,13 @@ function withoutLatest(records: AnswerRecord[], questionId: string): AnswerRecor
   return latestIndex === -1 ? records : records.filter((_, i) => i !== latestIndex);
 }
 
-export function SessionPage() {
+export function SessionPage({ slot = 'daily' }: { slot?: SessionSlot }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const requestedScope = (location.state as { scope?: SessionScope } | null)?.scope;
+  const request = location.state as { scope?: SessionScope; count?: number } | null;
+  const requestedScope = request?.scope;
+  const requestedCount = request?.count;
+  const summaryPath = slot === 'practice' ? '/practice/summary' : '/summary';
   const { answers, loading, reload } = useAnswers();
   const { settings, loading: settingsLoading } = useSettings();
   const { afterAnswer } = useSync();
@@ -67,19 +85,31 @@ export function SessionPage() {
   useEffect(() => {
     if (loading || settingsLoading || initialized.current) return;
     initialized.current = true;
-    const existing = loadSession();
-    if (existing && isComplete(existing)) {
-      navigate('/summary', { replace: true });
+    const existing = loadSession(slot);
+    if (slot === 'practice' && !request) {
+      // Only a page reload restores a practice session; in-app navigation never resumes it.
+      if (existing && !isComplete(existing) && consumeReloadOnce()) {
+        setSession(existing);
+        return;
+      }
+      clearSession('practice');
+      navigate('/practice', { replace: true });
       return;
     }
-    if (existing) {
-      setSession(existing);
-      return;
+    if (slot === 'daily') {
+      if (existing && isComplete(existing)) {
+        navigate(summaryPath, { replace: true });
+        return;
+      }
+      if (existing) {
+        setSession(existing);
+        return;
+      }
     }
     const picked = selectQuestions({
       questions,
       records: answers,
-      count: settings.questionsPerDay,
+      count: requestedCount ?? settings.questionsPerDay,
       now: new Date(),
       rng: randomRng,
       formats: settings.formats,
@@ -91,9 +121,18 @@ export function SessionPage() {
       return;
     }
     const fresh = createSession(picked.map((q) => q.id), todayKey(), requestedScope ?? { kind: 'all' });
-    saveSession(fresh);
+    saveSession(fresh, slot);
     setSession(fresh);
-  }, [loading, settingsLoading, answers, settings, navigate, requestedScope]);
+    // Starting a practice session consumes the navigation state so a reload restores instead of regenerating.
+    if (slot === 'practice') {
+      try {
+        sessionStorage.removeItem(RELOAD_FLAG);
+      } catch {
+        /* ignore */
+      }
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [loading, settingsLoading, answers, settings, navigate, requestedScope, requestedCount, slot, request, summaryPath, location.pathname]);
 
   const questionId = session ? currentQuestionId(session) : null;
   const question = questionId ? getQuestion(questionId) : undefined;
@@ -104,10 +143,13 @@ export function SessionPage() {
     setFeedback(feedbackFor(questions, question, session.lastResult, withoutLatest(answers, question.id), answers));
   }, [session, question, answers, feedback]);
 
-  const update = useCallback((next: ActiveSession) => {
-    saveSession(next);
-    setSession(next);
-  }, []);
+  const update = useCallback(
+    (next: ActiveSession) => {
+      saveSession(next, slot);
+      setSession(next);
+    },
+    [slot],
+  );
 
   const elapsed = useElapsed(session?.phase === 'answering' ? session.startedAt : null);
 
@@ -127,8 +169,8 @@ export function SessionPage() {
     const next = nextQuestion(session);
     setFeedback(null);
     if (isComplete(next)) {
-      saveSession(next);
-      navigate('/summary');
+      saveSession(next, slot);
+      navigate(summaryPath);
     } else {
       update(next);
     }
@@ -162,7 +204,7 @@ export function SessionPage() {
           type="button"
           className="btn btn-primary"
           onClick={() => {
-            clearSession();
+            clearSession(slot);
             navigate('/');
           }}
         >
@@ -279,7 +321,15 @@ export function SessionPage() {
       )}
 
       <p className="muted small center">
-        <Link to="/">いったん中断する</Link>（進行状況は保存されます）
+        {slot === 'practice' ? (
+          <Link to="/practice" onClick={() => clearSession('practice')}>
+            練習をやめる
+          </Link>
+        ) : (
+          <>
+            <Link to="/">いったん中断する</Link>（進行状況は保存されます）
+          </>
+        )}
       </p>
     </div>
   );

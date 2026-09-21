@@ -1,6 +1,13 @@
 import type { AnswerResult, SessionScope } from '../types';
 
 export const SESSION_KEY = 'spilab.activeSession';
+export const PRACTICE_SESSION_KEY = 'spilab.practiceSession';
+
+export type SessionSlot = 'daily' | 'practice';
+
+function keyOf(slot: SessionSlot): string {
+  return slot === 'daily' ? SESSION_KEY : PRACTICE_SESSION_KEY;
+}
 
 export type SessionPhase = 'ready' | 'answering' | 'answered';
 
@@ -46,8 +53,8 @@ function isSession(value: unknown): value is ActiveSession {
   );
 }
 
-export function loadSession(): ActiveSession | null {
-  const raw = storage()?.getItem(SESSION_KEY);
+export function loadSession(slot: SessionSlot = 'daily'): ActiveSession | null {
+  const raw = storage()?.getItem(keyOf(slot));
   if (!raw) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -57,10 +64,10 @@ export function loadSession(): ActiveSession | null {
   }
 }
 
-export function saveSession(session: ActiveSession): void {
-  storage()?.setItem(SESSION_KEY, JSON.stringify(session));
+export function saveSession(session: ActiveSession, slot: SessionSlot = 'daily'): void {
+  storage()?.setItem(keyOf(slot), JSON.stringify(session));
 }
 
-export function clearSession(): void {
-  storage()?.removeItem(SESSION_KEY);
+export function clearSession(slot: SessionSlot = 'daily'): void {
+  storage()?.removeItem(keyOf(slot));
 }

@@ -51,6 +51,14 @@ describe('sessionStore', () => {
     expect(loadSession()).toBeNull();
   });
 
+  it('keeps daily and practice slots apart', () => {
+    saveSession(session, 'practice');
+    expect(loadSession()).toBeNull();
+    expect(loadSession('practice')).toEqual(session);
+    clearSession('practice');
+    expect(loadSession('practice')).toBeNull();
+  });
+
   it('clears the session', () => {
     saveSession(session);
     clearSession();

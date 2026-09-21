@@ -10,7 +10,6 @@ import { ActivityHeatmap } from '../components/ActivityHeatmap';
 import { topicLabel } from '../questions/topics';
 import { formatPercent } from '../utils/format';
 import { HERO_MESSAGES } from '../data/messages';
-import { describeScope } from '../core/scope';
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -48,7 +47,7 @@ export function HomePage() {
         {inProgress ? (
           <>
             <button type="button" className="btn btn-primary btn-lg btn-hero" onClick={() => navigate('/session')}>
-              続きから（{session.currentIndex + 1} / {session.questionIds.length}問目・{describeScope(session.scope)}）
+              続きから（{session.currentIndex + 1} / {session.questionIds.length}問目）
             </button>
             <button type="button" className="btn btn-link" onClick={startNew}>
               今日の問題を作り直す
