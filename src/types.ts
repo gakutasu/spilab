@@ -5,6 +5,9 @@ export type AnswerResult = 'correct' | 'incorrect' | 'unknown';
 export type Evaluation = 'strong' | 'normal' | 'weak' | 'unrated';
 export type ChoiceIndex = 0 | 1 | 2 | 3;
 
+/** What a practice session draws from. */
+export type SessionScope = { kind: 'all' } | { kind: 'category'; category: Category } | { kind: 'topic'; topic: import('./questions/topics').TopicId };
+
 export interface Question {
   id: string;
   category: Category;

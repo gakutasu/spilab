@@ -1329,3 +1329,60 @@ tbody tr:hover {
   width: 20px;
   height: 20px;
 }
+
+/* Practice scope picker */
+.scope-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.scope-btn {
+  flex-direction: column;
+  gap: 2px;
+  min-height: 60px;
+}
+
+.scope-name {
+  font-weight: 700;
+}
+
+.scope-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.scope-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 4px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.scope-row:hover {
+  color: var(--primary);
+}
+
+.scope-row-name {
+  font-weight: 600;
+}
+
+.scope-row-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scope-note {
+  margin: -6px 0 0;
+}

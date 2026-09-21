@@ -1,4 +1,4 @@
-import type { AnswerResult } from '../types';
+import type { AnswerResult, SessionScope } from '../types';
 
 export const SESSION_KEY = 'spilab.activeSession';
 
@@ -22,6 +22,8 @@ export interface ActiveSession {
   selectedChoice: number | null;
   lastResult: SessionResult | null;
   results: SessionResult[];
+  /** Absent in sessions saved before scopes existed (= all). */
+  scope?: SessionScope;
 }
 
 function storage(): Storage | null {

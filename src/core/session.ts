@@ -1,9 +1,10 @@
-import type { AnswerRecord, AnswerResult, Question } from '../types';
+import type { AnswerRecord, AnswerResult, Question, SessionScope } from '../types';
 import type { ActiveSession } from '../storage/sessionStore';
 
-export function createSession(questionIds: string[], date: string): ActiveSession {
+export function createSession(questionIds: string[], date: string, scope: SessionScope = { kind: 'all' }): ActiveSession {
   return {
     date,
+    scope,
     questionIds,
     currentIndex: 0,
     phase: 'ready',

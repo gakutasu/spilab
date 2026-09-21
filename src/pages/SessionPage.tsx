@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import type { AnswerRecord, Question } from '../types';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import type { AnswerRecord, Question, SessionScope } from '../types';
 import { getQuestion, questions } from '../questions';
 import { CATEGORY_LABEL, topicLabel } from '../questions/topics';
 import { selectQuestions } from '../core/selection';
@@ -20,6 +20,7 @@ import { QuestionBody } from '../components/QuestionBody';
 import { Explanation } from '../components/Explanation';
 import { AskAiPanel } from '../components/AskAiPanel';
 import { CHOICE_LABELS, formatClock, formatSeconds, todayKey } from '../utils/format';
+import { describeScope } from '../core/scope';
 
 function feedbackFor(
   questions: Question[],
@@ -53,6 +54,8 @@ function withoutLatest(records: AnswerRecord[], questionId: string): AnswerRecor
 
 export function SessionPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const requestedScope = (location.state as { scope?: SessionScope } | null)?.scope;
   const { answers, loading, reload } = useAnswers();
   const { settings, loading: settingsLoading } = useSettings();
   const { afterAnswer } = useSync();
@@ -81,15 +84,16 @@ export function SessionPage() {
       rng: randomRng,
       formats: settings.formats,
       includeEnglish: settings.includeEnglish,
+      scope: requestedScope,
     });
     if (picked.length === 0) {
       setError('出題できる問題がありません。');
       return;
     }
-    const fresh = createSession(picked.map((q) => q.id), todayKey());
+    const fresh = createSession(picked.map((q) => q.id), todayKey(), requestedScope ?? { kind: 'all' });
     saveSession(fresh);
     setSession(fresh);
-  }, [loading, settingsLoading, answers, settings, navigate]);
+  }, [loading, settingsLoading, answers, settings, navigate, requestedScope]);
 
   const questionId = session ? currentQuestionId(session) : null;
   const question = questionId ? getQuestion(questionId) : undefined;
@@ -184,6 +188,7 @@ export function SessionPage() {
         </span>
         <span className="topic-badge">【{topicLabel(question.topic)}】</span>
       </div>
+      {session.scope && session.scope.kind !== 'all' && <p className="muted small scope-note">出題範囲：{describeScope(session.scope)}</p>}
 
       {session.phase === 'ready' && (
         <div className="card ready-card">
